@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Survivor Tipy 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--sand:#e8d5a3;--dark:#1a1209;--jungle:#2d4a1e;--fire:#e85d04;--gold:#f4a522;--water:#1a6fa8;--cream:#fdf6e3;--muted:#8a7a5a;--green:#4a9e3a;--red:#c0392b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:var(--dark);color:var(--cream);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(232,93,4,.12) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 100%,rgba(45,74,30,.3) 0%,transparent 50%)}
+main{position:relative;z-index:1}
+
+/* LOADING */
+#loading-overlay{position:fixed;inset:0;background:rgba(26,18,9,.9);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px}
+.spinner{width:48px;height:48px;border:3px solid rgba(244,165,34,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+
+/* HEADER */
+header{text-align:center;padding:50px 20px 30px;position:relative}
+.torch-left,.torch-right{position:absolute;top:30px;font-size:2rem;animation:flicker 1.5s ease-in-out infinite alternate}
+.torch-left{left:40px;animation-delay:.3s}.torch-right{right:40px}
+@keyframes flicker{0%{opacity:.8;transform:scale(1) rotate(-3deg)}100%{opacity:1;transform:scale(1.1) rotate(3deg)}}
+.season-tag{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--fire);border:1px solid var(--fire);padding:4px 16px;border-radius:2px;margin-bottom:16px}
+h1{font-family:'Bebas Neue',cursive;font-size:clamp(3rem,9vw,6rem);letter-spacing:.06em;line-height:.9;color:var(--sand);text-shadow:0 0 40px rgba(244,165,34,.3),3px 3px 0 rgba(0,0,0,.5)}
+h1 span{color:var(--fire)}
+.tagline{font-family:'Barlow Condensed',sans-serif;font-size:1rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:12px}
+
+/* AUTH */
+#auth-screen{display:none;align-items:center;justify-content:center;min-height:60vh;padding:20px}
+.auth-box{background:rgba(26,18,9,.85);border:1px solid rgba(244,165,34,.2);border-radius:4px;padding:48px 40px;width:100%;max-width:420px;backdrop-filter:blur(10px);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.auth-box h2{font-family:'Bebas Neue',cursive;font-size:2rem;letter-spacing:.1em;margin-bottom:8px;color:var(--sand)}
+.auth-box p{color:var(--muted);font-size:.9rem;margin-bottom:28px}
+.form-group{margin-bottom:20px}
+label{display:block;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+input[type="text"],input[type="password"]{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:14px 16px;color:var(--cream);font-family:'Barlow',sans-serif;font-size:1rem;outline:none;transition:border-color .2s}
+input:focus{border-color:var(--gold)}
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--fire),var(--gold));border:none;border-radius:3px;padding:16px;font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:.1em;color:var(--dark);cursor:pointer;transition:opacity .2s,transform .1s;margin-top:8px}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.auth-switch{margin-top:20px;text-align:center;color:var(--muted);font-size:.85rem}
+.auth-switch a{color:var(--gold);cursor:pointer;text-decoration:underline}
+.error-msg{background:rgba(232,93,4,.15);border:1px solid var(--fire);border-radius:3px;padding:12px 16px;font-size:.85rem;color:var(--fire);margin-bottom:16px;display:none}
+
+/* TOP BAR */
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.35);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:10px}
+.user-info{display:flex;align-items:center;gap:12px}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--fire),var(--gold));display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:1rem;color:var(--dark);flex-shrink:0}
+.username-display{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.05em}
+.top-bar-right{display:flex;gap:8px;align-items:center}
+.btn-sm{background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:3px;padding:7px 14px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.btn-sm:hover{border-color:var(--fire);color:var(--fire)}
+.btn-sm.admin-btn{border-color:rgba(244,165,34,.4);color:var(--gold)}
+.btn-sm.admin-btn:hover{background:rgba(244,165,34,.1)}
+
+/* TABS */
+.tabs{display:flex;gap:0;max-width:1200px;margin:24px auto 0;padding:0 24px}
+.tab{font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:10px 20px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);transition:all .2s;white-space:nowrap}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab:hover:not(.active){color:var(--cream)}
+.tab-badge{display:inline-block;background:var(--fire);color:white;font-size:.65rem;padding:2px 6px;border-radius:10px;margin-left:6px;vertical-align:middle}
+
+/* TAB CONTENT */
+.tab-content{display:none;max-width:1200px;margin:0 auto;padding:24px}
+.tab-content.active{display:block}
+
+/* SECTION STYLES */
+.section-title{font-family:'Bebas Neue',cursive;font-size:2.2rem;letter-spacing:.08em;color:var(--sand);margin-bottom:8px}
+.section-sub{font-size:.85rem;color:var(--muted);margin-bottom:24px;line-height:1.6}
+.section-sub strong{color:var(--gold)}
+
+/* DEADLINE BANNER */
+.deadline-banner{display:flex;align-items:center;gap:14px;padding:14px 20px;border-radius:4px;margin-bottom:20px;flex-wrap:wrap}
+.deadline-open{background:rgba(232,93,4,.1);border:1px solid rgba(232,93,4,.3)}
+.deadline-locked{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.35)}
+.deadline-banner .countdown-big{font-family:'Bebas Neue',cursive;font-size:2rem;letter-spacing:.08em;color:var(--fire);line-height:1}
+.deadline-banner .countdown-label{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.deadline-locked-msg{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:.05em;color:#e07070}
+.countdown-unit{text-align:center;min-width:48px}
+.countdown-unit span:first-child{display:block}
+/* PRICE TAG */
+.price-tag{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.15em;padding:4px 12px;border-radius:2px;margin-bottom:16px;text-transform:uppercase}
+.price-basic{background:rgba(45,74,30,.4);color:#7ecf5a;border:1px solid rgba(126,207,90,.3)}
+.price-bonus{background:rgba(244,165,34,.15);color:var(--gold);border:1px solid rgba(244,165,34,.3)}
+
+/* WINNER TIP */
+.winner-tip-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:24px;margin-bottom:32px}
+.winner-tip-box.has-pick{border-color:rgba(244,165,34,.4);background:rgba(244,165,34,.06)}
+.winner-selected{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.winner-emoji{font-size:2.5rem}
+.winner-info .name{font-family:'Bebas Neue',cursive;font-size:2rem;letter-spacing:.06em}
+.winner-info .desc{font-size:.85rem;color:var(--muted)}
+.winner-empty{color:rgba(255,255,255,.3);font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em}
+.btn-change{background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:3px;padding:8px 16px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;margin-left:auto;transition:all .2s}
+.btn-change:hover{border-color:var(--gold);color:var(--gold)}
+
+/* CONTESTANT PICKER */
+.picker-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;padding:20px}
+.picker-overlay.open{display:flex}
+.picker-box{background:#1e1508;border:1px solid rgba(244,165,34,.2);border-radius:6px;width:100%;max-width:800px;max-height:85vh;overflow-y:auto;padding:28px}
+.picker-box h3{font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:.08em;margin-bottom:20px;color:var(--sand)}
+.picker-close{float:right;background:transparent;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;line-height:1}
+.picker-close:hover{color:var(--fire)}
+
+/* CONTESTANTS GRID */
+.contestants-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+.contestant-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:14px 10px;cursor:pointer;transition:all .2s;position:relative;text-align:center;user-select:none}
+.contestant-card:hover:not(.eliminated):not(.already-picked){background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);transform:translateY(-2px)}
+.contestant-card.selected{background:rgba(244,165,34,.15);border-color:var(--gold)}
+.contestant-card.eliminated{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+.contestant-card.already-picked{opacity:.5;cursor:not-allowed}
+.contestant-emoji-sm{font-size:1.6rem;display:block;margin-bottom:6px}
+.contestant-name-sm{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;color:var(--cream)}
+.contestant-desc-sm{font-size:.68rem;color:var(--muted);margin-top:3px;line-height:1.3}
+.elim-badge{position:absolute;top:-6px;right:-6px;background:var(--red);color:white;font-size:.6rem;font-weight:700;padding:2px 5px;border-radius:2px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.05em}
+
+/* WEEKLY PICK SLOTS */
+.weekly-pick-slot{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);border-radius:4px;padding:14px 16px;cursor:pointer;transition:all .2s;min-height:58px;font-size:.9rem}
+.weekly-pick-slot:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.3)}
+.weekly-pick-slot.filled{background:rgba(244,165,34,.08);border:1px solid rgba(244,165,34,.35);border-style:solid}
+.weekly-pick-slot.filled.blue{background:rgba(26,111,168,.08);border-color:rgba(26,111,168,.35)}
+.contestant-card.selected-blue{background:rgba(26,111,168,.12);border-color:var(--water);box-shadow:0 0 20px rgba(26,111,168,.15)}
+.week-status{display:inline-flex;align-items:center;gap:8px;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:6px 14px;border-radius:2px;margin-bottom:20px}
+.week-open{background:rgba(74,158,58,.15);color:var(--green);border:1px solid rgba(74,158,58,.3)}
+.week-closed{background:rgba(192,57,43,.1);color:#e74c3c;border:1px solid rgba(192,57,43,.3)}
+.week-dot{width:7px;height:7px;border-radius:50%;animation:pulse 1.5s ease infinite}
+.week-open .week-dot{background:var(--green)}.week-closed .week-dot{background:#e74c3c;animation:none}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+
+.weekly-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:24px}
+.btn-save-big{background:linear-gradient(135deg,var(--jungle),#3d6628);border:1px solid rgba(255,255,255,.1);border-radius:3px;padding:14px 36px;font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:.1em;color:var(--sand);cursor:pointer;transition:all .2s}
+.btn-save-big:hover{opacity:.85;transform:translateY(-1px)}
+.btn-save-big:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.save-ok{display:inline-block;margin-left:14px;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;color:var(--green);opacity:0;transition:opacity .3s}
+.save-ok.show{opacity:1}
+
+/* WEEKLY RESULTS */
+.week-results{margin-top:32px}
+.week-round{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:4px;margin-bottom:12px;overflow:hidden}
+.week-round-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none}
+.week-round-header:hover{background:rgba(255,255,255,.04)}
+.week-round-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.08em}
+.week-round-meta{font-size:.8rem;color:var(--muted)}
+.week-round-body{padding:0 18px 16px;display:none}
+.week-round-body.open{display:block}
+.picks-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pick-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:700}
+.pick-pill.hit{background:rgba(74,158,58,.2);border:1px solid rgba(74,158,58,.4);color:#7ecf5a}
+.pick-pill.miss{background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);color:#e07070}
+.pick-pill.pending{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:var(--muted)}
+
+/* BONUS TIP */
+.bonus-locked{background:rgba(244,165,34,.06);border:1px solid rgba(244,165,34,.2);border-radius:4px;padding:32px;text-align:center}
+.bonus-locked-icon{font-size:3rem;margin-bottom:12px}
+.bonus-locked h3{font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:.08em;color:var(--gold);margin-bottom:8px}
+.bonus-locked p{color:var(--muted);font-size:.9rem}
+.countdown{font-family:'Bebas Neue',cursive;font-size:2.5rem;color:var(--fire);letter-spacing:.1em;margin-top:16px}
+
+.bonus-list{margin-bottom:28px}
+.bonus-slot{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:3px;padding:12px 16px;margin-bottom:8px;cursor:pointer;transition:all .2s;min-height:58px}
+.bonus-slot:hover:not(.filled){background:rgba(255,255,255,.08)}
+.bonus-slot.filled{border-color:rgba(244,165,34,.35);background:rgba(244,165,34,.07)}
+.bonus-slot.filled.first-out-slot{border-color:rgba(232,93,4,.35);background:rgba(232,93,4,.07)}
+.slot-num{font-family:'Bebas Neue',cursive;font-size:1.6rem;color:rgba(255,255,255,.2);width:32px;text-align:center;flex-shrink:0}
+.slot-num.gold{color:var(--gold)}.slot-num.silver{color:#aaa}.slot-num.bronze{color:#cd7f32}
+.slot-empty-txt{color:rgba(255,255,255,.25);font-family:'Barlow Condensed',sans-serif;font-size:.9rem;letter-spacing:.05em}
+.slot-filled-inner{display:flex;align-items:center;gap:10px;flex:1}
+.slot-emoji{font-size:1.4rem}
+.slot-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem}
+.slot-desc{font-size:.75rem;color:var(--muted)}
+.slot-remove{margin-left:auto;background:transparent;border:none;color:rgba(255,255,255,.25);cursor:pointer;font-size:1rem;padding:4px;transition:color .2s}
+.slot-remove:hover{color:var(--fire)}
+
+/* LEADERBOARD */
+.lb-table{width:100%;border-collapse:collapse;margin-top:16px}
+.lb-table th{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.lb-table td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.05);font-size:.88rem;vertical-align:top}
+.lb-table tr:hover td{background:rgba(255,255,255,.03)}
+.rank-num{font-family:'Bebas Neue',cursive;font-size:1.3rem;color:rgba(255,255,255,.2)}
+.rank-1{color:var(--gold)}.rank-2{color:var(--sand)}.rank-3{color:var(--fire)}
+.chip{display:inline-block;padding:2px 8px;border-radius:2px;font-size:.72rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;margin:1px}
+.chip-w{background:rgba(244,165,34,.15);color:var(--gold);border:1px solid rgba(244,165,34,.25)}
+.chip-fo{background:rgba(232,93,4,.15);color:var(--fire);border:1px solid rgba(232,93,4,.25)}
+.chip-b{background:rgba(26,111,168,.15);color:#5badde;border:1px solid rgba(26,111,168,.25)}
+.score-big{font-family:'Bebas Neue',cursive;font-size:1.6rem;color:var(--gold)}
+.live-badge{display:inline-flex;align-items:center;gap:6px;font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--green);margin-left:12px;vertical-align:middle}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s ease infinite}
+
+/* ADMIN */
+.admin-panel{background:rgba(244,165,34,.05);border:1px solid rgba(244,165,34,.2);border-radius:4px;padding:28px;margin-bottom:24px}
+.admin-panel h3{font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:.08em;color:var(--gold);margin-bottom:20px}
+.admin-section{margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid rgba(255,255,255,.08)}
+.admin-section:last-child{border:none;margin-bottom:0;padding-bottom:0}
+.admin-section h4{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.admin-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+select{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:3px;padding:10px 14px;color:var(--cream);font-family:'Barlow',sans-serif;font-size:.9rem;outline:none;min-width:200px}
+select:focus{border-color:var(--gold)}
+.btn-admin{background:rgba(244,165,34,.15);border:1px solid rgba(244,165,34,.3);border-radius:3px;padding:10px 20px;color:var(--gold);font-family:'Barlow Condensed',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.btn-admin:hover{background:rgba(244,165,34,.25)}
+.btn-admin.danger{background:rgba(192,57,43,.15);border-color:rgba(192,57,43,.3);color:#e07070}
+.btn-admin.danger:hover{background:rgba(192,57,43,.25)}
+.btn-admin.success{background:rgba(74,158,58,.15);border-color:rgba(74,158,58,.3);color:#7ecf5a}
+.elim-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.elim-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.25);border-radius:2px;padding:4px 10px;font-family:'Barlow Condensed',sans-serif;font-size:.82rem;color:#e07070}
+.elim-chip button{background:transparent;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:.9rem;padding:0 0 0 4px}
+.elim-chip button:hover{color:var(--fire)}
+.week-list{margin-top:10px}
+.week-item{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:3px;padding:10px 14px;margin-bottom:6px;flex-wrap:wrap}
+.week-item-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;flex:1}
+.week-item-result{font-size:.8rem;color:var(--muted)}
+
+input[type="datetime-local"]{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:3px;padding:10px 14px;color:var(--cream);font-family:'Barlow',sans-serif;font-size:.9rem;outline:none;color-scheme:dark}
+input[type="datetime-local"]:focus{border-color:var(--gold)}
+
+/* TRIBE DIVIDER */
+.tribe-label{font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:.12em;padding:5px 12px 5px 10px;border-radius:3px;border-left:3px solid;margin:16px 0 8px;display:inline-block}
+.tribe-a{background:rgba(244,165,34,.08);border-color:var(--gold);color:var(--gold)}
+.tribe-b{background:rgba(26,111,168,.08);border-color:var(--water);color:var(--water)}
+
+@media(max-width:600px){
+  .tabs{overflow-x:auto;padding:0 16px}.tab{padding:10px 14px;font-size:.78rem}
+  .tab-content{padding:16px}.auth-box{padding:32px 24px}
+  .contestants-grid,.weekly-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+}
+</style>
+</head>
+<body>
+<main>
+
+<!-- LOADING -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Připojování na ostrov…</div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="torch-left">🔥</div><div class="torch-right">🔥</div>
+  <div class="season-tag">Česko & Slovensko · Série V · 2026</div>
+  <h1>SURVIVOR<br><span>TIPY</span></h1>
+  <p class="tagline">Kdo přežije? Vsaď na svého favorita.</p>
+</header>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <h2 id="auth-title">Přihlásit se</h2>
+    <p id="auth-subtitle">Vlož přezdívku a heslo.</p>
+    <div class="error-msg" id="error-msg"></div>
+    <div class="form-group">
+      <label>Přezdívka</label>
+      <input type="text" id="username" placeholder="tvoje_přezdívka" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Heslo</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="auth-btn">🏝️ Vstoupit na ostrov</button>
+    <div class="auth-switch">
+      <span id="auth-switch-text">Nemáš účet?</span>
+      <a id="auth-switch-link">Registrovat se</a>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" style="display:none">
+  <div class="top-bar">
+    <div class="user-info">
+      <div class="avatar" id="user-avatar">?</div>
+      <span class="username-display" id="user-display-name">—</span>
+    </div>
+    <div class="top-bar-right">
+      <button class="btn-sm admin-btn" id="admin-toggle-btn" style="display:none">👑 Admin</button>
+      <button class="btn-sm" id="btn-logout">Odhlásit</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" data-tab="zakladni">🏆 Základní <span class="price-tag price-basic" style="font-size:.65rem;padding:2px 7px;margin:0 0 0 4px">100 Kč</span></div>
+    <div class="tab" data-tab="tydeni">📅 Týdenní tip</div>
+    <div class="tab" data-tab="bonus">🎯 Bonus <span class="price-tag price-bonus" style="font-size:.65rem;padding:2px 7px;margin:0 0 0 4px">1000 Kč</span></div>
+    <div class="tab" data-tab="leaderboard">📊 Žebříček</div>
+    <div class="tab admin-tab" data-tab="admin" style="display:none">👑 Admin</div>
+  </div>
+
+  <!-- TAB: ZÁKLADNÍ -->
+  <div class="tab-content active" id="tab-zakladni">
+    <div class="price-tag price-basic">Základní tip · 100 Kč</div>
+    <div class="section-title">Vítěz sezóny</div>
+    <p class="section-sub">Jednou si vyber soutěžícího, o kterém věříš, že vyhraje celou sezónu. <strong>Deadline: pátek 20. 2. 2026 ve 23:59.</strong></p>
+
+    <div id="winner-deadline-banner"></div>
+
+    <div class="winner-tip-box" id="winner-box">
+      <div id="winner-display"><p class="winner-empty">Nikdo vybrán — klikni níže pro výběr</p></div>
+      <div id="winner-actions" style="margin-top:16px">
+        <button class="btn-save-big" id="btn-pick-winner">Vybrat vítěze</button>
+        <span class="save-ok" id="winner-save-ok">✓ Uloženo!</span>
+      </div>
+    </div>
+
+    <div style="margin-top:32px" id="winner-grid-area">
+      <div class="tribe-label tribe-a">🌴 Známé tváře</div>
+      <div class="contestants-grid" id="grid-celebs-basic"></div>
+      <div class="tribe-label tribe-b">🧑 Ostatní soutěžící</div>
+      <div class="contestants-grid" id="grid-civilian-basic"></div>
+    </div>
+  </div>
+
+  <!-- TAB: TÝDENNÍ -->
+  <div class="tab-content" id="tab-tydeni">
+    <div class="price-tag price-basic">Týdenní tip · zdarma</div>
+    <div class="section-title">Kdo vypadne tento týden?</div>
+    <p class="section-sub">Každý týden tipuj <strong>dva soutěžící</strong>, kteří budou vyřazeni — jednoho za každý kmen. Stačí trefit jméno, nezáleží na pořadí.</p>
+
+    <div id="weekly-tip-area"></div>
+    <div class="week-results" id="weekly-results-area"></div>
+  </div>
+
+  <!-- TAB: BONUS -->
+  <div class="tab-content" id="tab-bonus">
+    <div class="price-tag price-bonus">Bonusový tip · 1000 Kč</div>
+    <div class="section-title">Bonusové tipování</div>
+    <p class="section-sub">Seřaď 5 soutěžících, kteří dojdou nejdál, a 5 kteří vypadnou jako první. <strong>Záleží i na přesném pořadí</strong> — přesná pozice = 20 bodů, správný hráč na jiné pozici = 10 bodů.</p>
+
+    <div id="bonus-area"></div>
+  </div>
+
+  <!-- TAB: LEADERBOARD -->
+  <div class="tab-content" id="tab-leaderboard">
+    <span class="section-title">Žebříček</span>
+    <span class="live-badge"><span class="live-dot"></span>živě</span>
+    <p class="section-sub" style="margin-top:8px">Celkové skóre ze všech kategorií. Aktualizuje se automaticky.</p>
+    <div id="leaderboard-area"></div>
+  </div>
+
+  <!-- TAB: ADMIN -->
+  <div class="tab-content" id="tab-admin">
+    <div class="section-title">Admin panel</div>
+    <p class="section-sub">Správa soutěže — označení vyřazených, týdenní kola.</p>
+    <div id="admin-area"></div>
+  </div>
+</div>
+
+<!-- PICKER OVERLAY -->
+<div class="picker-overlay" id="picker-overlay">
+  <div class="picker-box">
+    <button class="picker-close" id="picker-close">✕</button>
+    <h3 id="picker-title">Vyber soutěžícího</h3>
+    <div id="picker-grid"></div>
+    <button class="btn-save-big" id="picker-confirm" style="display:none">Potvrdit výběr</button>
+  </div>
+</div>
+
+</main>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteField }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyAdP93H0jPkveq0PJsbWt3epgJk36Dn6oY",
+  authDomain:        "survivor-tipy.firebaseapp.com",
+  projectId:         "survivor-tipy",
+  storageBucket:     "survivor-tipy.firebasestorage.app",
+  messagingSenderId: "949806018331",
+  appId:             "1:949806018331:web:acea014bbea16d82076dbe"
+};
+
+const ADMIN_PASSWORD = "survivor2026admin";
+const BONUS_OPEN_DATE = new Date("2026-02-27T00:00:00");
+const WINNER_DEADLINE = new Date("2026-02-20T23:59:00");
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+/* ═══════════════════════════════════════════════
+   CONTESTANTS
+═══════════════════════════════════════════════ */
+const CONTESTANTS = {
+  celebs: [
+    {id:'trabo',   name:'Trabo',   desc:'Michal Trabalík, 31 — reality star',    emoji:'⭐'},
+    {id:'adam',    name:'Adam',    desc:'Adam Chlpík, 39 — rapper',              emoji:'🎤'},
+    {id:'vendy',   name:'Vendy',   desc:'Vendula Wronka Fialová, 38 — herečka',  emoji:'🎭'},
+    {id:'doki',    name:'Doki',    desc:'Jan Dokládal, 26 — moderátor',          emoji:'📻'},
+    {id:'ondrej',  name:'Ondřej',  desc:'Ondřej Kubina, 28 — herec',             emoji:'🎬'},
+    {id:'zofie',   name:'Žofie',   desc:'Žofie Dařbujánová, 31 — zpěvačka',     emoji:'🎶'},
+    {id:'johana',  name:'Johana',  desc:'Johana Nováčková, 28 — herečka',        emoji:'🌟'},
+  ],
+  civilian: [
+    {id:'tereza',   name:'Tereza',   desc:'Tereza Svobodová, 29 — porodní asistentka', emoji:'👶'},
+    {id:'nela',     name:'Nela',     desc:'Nela Slivková, 30 — novinářka',              emoji:'📰'},
+    {id:'matej',    name:'Matěj',    desc:'Matěj Libecajt, 37 — key account manažer',  emoji:'💼'},
+    {id:'bara',     name:'Bára',     desc:'Bára Hošková, 26 — módní návrhářka',        emoji:'👗'},
+    {id:'jura',     name:'Jura',     desc:'Jiří Drtil, 30 — stavební inženýr',         emoji:'🏗️'},
+    {id:'jan',      name:'Ján',      desc:'Ján Palko, 35 — sous-chef',                 emoji:'👨‍🍳'},
+    {id:'simona',   name:'Simona',   desc:'Simona Kirchnerová, 28 — modelka',          emoji:'💎'},
+    {id:'eva',      name:'Eva',      desc:'Eva Tesařová, 20 — studentka',              emoji:'📚'},
+    {id:'sara',     name:'Sára',     desc:'Sára Trnková, 24 — IT konzultantka',        emoji:'💻'},
+    {id:'lukas',    name:'Lukáš',    desc:'Lukáš Švec, 28 — policista',               emoji:'👮'},
+    {id:'bety',     name:'Bety',     desc:'Alžběta Levínská, 25 — basketbalistka',    emoji:'🏀'},
+    {id:'iki',      name:'Iki',      desc:'Iki Ngatse, 25 — podcaster',               emoji:'🎙️'},
+    {id:'viviane',  name:'Viviane',  desc:'Viviane Kerstin, 25 — pilates instruktorka',emoji:'🧘'},
+    {id:'leos',     name:'Leoš',     desc:'Leoš Svoboda, 23 — stážista v jaderné el.',emoji:'⚛️'},
+    {id:'otakar',   name:'Otakar',   desc:'Otakar Šenkýř, 32 — designer',             emoji:'🎨'},
+    {id:'stanislav',name:'Stanislav',desc:'Stanislav Štěpánek, 28 — AI architekt',    emoji:'🤖'},
+    {id:'denisa',   name:'Denisa',   desc:'Denisa Ryndová, 25 — parkurová jezdkyně',  emoji:'🐎'},
+  ]
+};
+const getAllC = () => [...CONTESTANTS.celebs, ...CONTESTANTS.civilian];
+const findById = id => getAllC().find(c => c.id === id);
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let currentUser = null;
+let isAdmin = false;
+let myData = {};          // user's picks doc
+let gameState = {};       // global game state (eliminated, weeks, bonusOpen)
+let allPicks = {};        // all users picks for leaderboard
+let unsubPicks = null;
+let unsubGame = null;
+
+// picker state
+let pickerMode = null;    // 'winner' | 'weekly' | 'bonus-far' | 'bonus-out'
+let pickerSlot = null;    // slot index for bonus
+let pickerSelected = null;
+
+/* ═══════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const nick = u => u.displayName || u.email.split('@')[0];
+const fakeEmail = n => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'') + '@survivor.vsazky';
+function setLoading(on) { $('loading-overlay').style.display = on?'flex':'none'; }
+function showErr(msg) { const e=$('error-msg'); e.textContent=msg; e.style.display='block'; }
+function flash(elId) { const e=$(elId); e.classList.add('show'); setTimeout(()=>e.classList.remove('show'),3000); }
+
+/* ═══════════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════════ */
+onAuthStateChanged(auth, user => {
+  if (user) { currentUser=user; initApp(); }
+  else { currentUser=null; showAuthScreen(); }
+});
+
+async function doRegister() {
+  const n=$('username').value.trim(), p=$('password').value;
+  if(!n||n.length<2) return showErr('Přezdívka musí mít alespoň 2 znaky.');
+  if(!p||p.length<6) return showErr('Heslo musí mít alespoň 6 znaků.');
+  setLoading(true);
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, fakeEmail(n), p);
+    await updateProfile(cred.user, {displayName:n});
+  } catch(e) {
+    setLoading(false);
+    if(e.code==='auth/email-already-in-use') return showErr('Tato přezdívka je již obsazena.');
+    showErr('Chyba: '+e.message);
+  }
+}
+async function doLogin() {
+  const n=$('username').value.trim(), p=$('password').value;
+  if(!n||!p) return showErr('Vyplň přezdívku i heslo.');
+  setLoading(true);
+  try { await signInWithEmailAndPassword(auth, fakeEmail(n), p); }
+  catch(e) {
+    setLoading(false);
+    if(['auth/user-not-found','auth/invalid-credential','auth/wrong-password'].includes(e.code))
+      return showErr('Špatná přezdívka nebo heslo.');
+    showErr('Chyba: '+e.message);
+  }
+}
+
+let isReg = false;
+function setAuthMode(reg) {
+  isReg=reg;
+  $('auth-title').textContent = reg?'Registrace':'Přihlásit se';
+  $('auth-subtitle').textContent = reg?'Vytvoř si účet a vsaď tipy.':'Vlož přezdívku a heslo.';
+  $('auth-btn').textContent = reg?'🏝️ Vytvořit účet':'🏝️ Vstoupit na ostrov';
+  $('auth-switch-text').textContent = reg?'Již máš účet?':'Nemáš účet?';
+  $('auth-switch-link').textContent = reg?'Přihlásit se':'Registrovat se';
+  $('error-msg').style.display='none';
+}
+
+function showAuthScreen() {
+  $('auth-screen').style.display='flex';
+  $('app-screen').style.display='none';
+  if(unsubPicks){unsubPicks();unsubPicks=null;}
+  if(unsubGame){unsubGame();unsubGame=null;}
+  setLoading(false);
+}
+
+/* ═══════════════════════════════════════════════
+   APP INIT
+═══════════════════════════════════════════════ */
+async function initApp() {
+  $('auth-screen').style.display='none';
+  $('app-screen').style.display='block';
+  const n = nick(currentUser);
+  $('user-display-name').textContent = n;
+  $('user-avatar').textContent = n[0].toUpperCase();
+
+  // load my picks
+  const pd = await getDoc(doc(db,'picks',currentUser.uid));
+  myData = pd.exists() ? pd.data() : {winner:null, bonusFar:Array(5).fill(null), bonusOut:Array(5).fill(null), weekly:{}};
+  if(!myData.bonusFar) myData.bonusFar = Array(5).fill(null);
+  if(!myData.bonusOut) myData.bonusOut = Array(5).fill(null);
+  if(!myData.weekly)   myData.weekly = {};
+
+  // subscribe game state
+  unsubGame = onSnapshot(doc(db,'game','state'), async snap => {
+    gameState = snap.exists() ? snap.data() : {eliminated:[], weeks:[], bonusOpen:false};
+    if(!gameState.eliminated) gameState.eliminated=[];
+    if(!gameState.weeks) gameState.weeks=[];
+
+    // Auto-create first week (23.2.–1.3.2026) if no weeks exist yet
+    if(gameState.weeks.length===0) {
+      const firstWeek = {
+        id: 'w_week1',
+        weekNum: 1,
+        label: '23. 2. – 1. 3. 2026',
+        deadline: '2026-03-01T22:00',
+        closed: false,
+        results: []
+      };
+      const newState = {...gameState, weeks:[firstWeek]};
+      await setDoc(doc(db,'game','state'), newState);
+      return; // onSnapshot will fire again with updated data
+    }
+
+    renderAll();
+  });
+
+  // subscribe all picks for leaderboard
+  unsubPicks = onSnapshot(collection(db,'picks'), snap => {
+    allPicks={};
+    snap.forEach(d => allPicks[d.id]=d.data());
+    renderLeaderboard();
+  });
+
+  setLoading(false);
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER ALL
+═══════════════════════════════════════════════ */
+function renderAll() {
+  renderBasic();
+  renderWeekly();
+  renderBonus();
+  renderLeaderboard();
+  if(isAdmin) renderAdmin();
+}
+
+/* ═══════════════════════════════════════════════
+   TAB: ZÁKLADNÍ (Winner)
+═══════════════════════════════════════════════ */
+let winnerCountdownInterval = null;
+
+function renderBasic() {
+  const now = new Date();
+  const locked = now > WINNER_DEADLINE;
+
+  // ── Deadline banner ──
+  const banner = $('winner-deadline-banner');
+  if(banner) {
+    if(locked) {
+      banner.innerHTML = `<div class="deadline-banner deadline-locked">
+        <span style="font-size:1.5rem">🔒</span>
+        <span class="deadline-locked-msg">Tipování vítěze bylo uzavřeno 20. 2. 2026 ve 23:59</span>
+      </div>`;
+    } else {
+      banner.innerHTML = `<div class="deadline-banner deadline-open">
+        <span style="font-size:1.3rem">⏳</span>
+        <div>
+          <div class="deadline-label" style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Zbývá do uzávěrky</div>
+          <div id="winner-countdown" class="countdown-big" style="font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:.1em;color:var(--fire)"></div>
+        </div>
+      </div>`;
+      startWinnerCountdown();
+    }
+  }
+
+  // ── Winner display ──
+  const wd = $('winner-display');
+  if(myData.winner) {
+    const c = findById(myData.winner);
+    const elim = gameState.eliminated?.some(e=>e.id===myData.winner);
+    wd.innerHTML = `<div class="winner-selected">
+      <span class="winner-emoji">${c.emoji}</span>
+      <div class="winner-info">
+        <div class="name">${c.name}</div>
+        <div class="desc">${c.desc}</div>
+        ${elim?'<div style="color:var(--red);font-size:.8rem;margin-top:4px">⚠️ Tento soutěžící byl vyřazen</div>':''}
+      </div>
+      ${!locked?'<button class="btn-change" id="btn-pick-winner">Změnit</button>':''}
+    </div>`;
+  } else {
+    wd.innerHTML = locked
+      ? '<p class="winner-empty">Tip nebyl zadán — uzávěrka proběhla</p>'
+      : '<p class="winner-empty">Nikdo vybrán — vyber ze seznamu níže</p>';
+  }
+
+  // ── Actions ──
+  const actions = $('winner-actions');
+  if(actions) {
+    if(locked) {
+      actions.style.display = 'none';
+    } else {
+      actions.style.display = 'block';
+    }
+  }
+
+  // ── Grid ──
+  const gridArea = $('winner-grid-area');
+  if(gridArea) gridArea.style.display = locked ? 'none' : 'block';
+
+  $('winner-box').classList.toggle('has-pick', !!myData.winner);
+
+  const pickBtn = $('btn-pick-winner');
+  if(pickBtn) pickBtn.onclick = () => openPicker('winner');
+
+  if(!locked) {
+    renderContestantGrid('grid-celebs-basic', CONTESTANTS.celebs, 'winner');
+    renderContestantGrid('grid-civilian-basic', CONTESTANTS.civilian, 'winner');
+  }
+}
+
+function startWinnerCountdown() {
+  if(winnerCountdownInterval) clearInterval(winnerCountdownInterval);
+  function tick() {
+    const el = $('winner-countdown');
+    if(!el) { clearInterval(winnerCountdownInterval); return; }
+    const now = new Date();
+    const diff = WINNER_DEADLINE - now;
+    if(diff <= 0) {
+      clearInterval(winnerCountdownInterval);
+      renderBasic();
+      return;
+    }
+    const days  = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins  = Math.floor((diff % 3600000) / 60000);
+    const secs  = Math.floor((diff % 60000) / 1000);
+    el.textContent = days > 0
+      ? `${days}d ${String(hours).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m ${String(secs).padStart(2,'0')}s`
+      : `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  }
+  tick();
+  winnerCountdownInterval = setInterval(tick, 1000);
+}
+
+function renderContestantGrid(containerId, list, mode) {
+  const el = $(containerId);
+  if(!el) return;
+  el.innerHTML = list.map(c => {
+    const elimInfo = gameState.eliminated?.find(e=>e.id===c.id);
+    const isSelected = myData.winner===c.id;
+    let cls = 'contestant-card';
+    if(isSelected) cls+=' selected';
+    if(elimInfo) cls+=' eliminated';
+    return `<div class="${cls}" data-id="${c.id}">
+      ${elimInfo?`<div class="elim-badge">#${elimInfo.order}</div>`:''}
+      <span class="contestant-emoji-sm">${c.emoji}</span>
+      <div class="contestant-name-sm">${c.name}</div>
+      <div class="contestant-desc-sm">${c.desc}</div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.contestant-card:not(.eliminated)').forEach(card => {
+    card.onclick = () => { quickPickWinner(card.dataset.id); };
+  });
+}
+
+async function quickPickWinner(id) {
+  myData.winner = id;
+  await saveMyData();
+  flash('winner-save-ok');
+  renderBasic();
+}
+
+/* ═══════════════════════════════════════════════
+   TAB: TÝDENNÍ — 2 tipy (pick1, pick2)
+═══════════════════════════════════════════════ */
+function renderWeekly() {
+  const area = $('weekly-tip-area');
+  const resultsArea = $('weekly-results-area');
+  const weeks = gameState.weeks || [];
+  const now = new Date();
+
+  const openWeek = weeks.find(w => !w.closed && w.deadline && new Date(w.deadline) > now);
+  const closedWeeks = weeks.filter(w => w.closed).sort((a,b)=>b.weekNum-a.weekNum);
+
+  if(openWeek) {
+    const myWeekPick = myData.weekly?.[openWeek.id] || {pick1:null, pick2:null};
+    const deadline = new Date(openWeek.deadline);
+    const hasBothPicks = myWeekPick.pick1 && myWeekPick.pick2;
+
+    // Tribe labels for the week
+    const tribeALabel = openWeek.tribeA || 'Kmen A';
+    const tribeBLabel = openWeek.tribeB || 'Kmen B';
+    const hasTribeNominees = openWeek.nominees && openWeek.nominees.length > 0;
+
+    area.innerHTML = `
+      <div class="week-status week-open"><span class="week-dot"></span>
+        Kolo ${openWeek.weekNum} · 23. 2. – 1. 3. 2026 · Deadline: ${deadline.toLocaleDateString('cs-CZ')} ${deadline.toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'})}
+      </div>
+      <p class="section-sub" style="margin-bottom:20px">Vyber <strong>dva soutěžící</strong>, kteří budou tento týden vyřazeni — po jednom za každý kmen.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">
+            ${openWeek.tribeA ? '🟡 ' + tribeALabel : '🟡 Tip č. 1'}
+          </div>
+          <div class="weekly-pick-slot ${myWeekPick.pick1?'filled':''}" id="slot-pick1" data-slot="pick1">
+            ${myWeekPick.pick1 ? (() => { const c=findById(myWeekPick.pick1); return `<span style="font-size:1.4rem">${c.emoji}</span> <strong>${c.name}</strong> <button class="slot-remove" data-clear="pick1" style="margin-left:auto">✕</button>`;})() : '<span style="color:rgba(255,255,255,.25);font-family:\'Barlow Condensed\',sans-serif">Klikni pro výběr…</span>'}
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--water);margin-bottom:10px">
+            ${openWeek.tribeB ? '🔵 ' + tribeBLabel : '🔵 Tip č. 2'}
+          </div>
+          <div class="weekly-pick-slot ${myWeekPick.pick2?'filled blue':''}" id="slot-pick2" data-slot="pick2">
+            ${myWeekPick.pick2 ? (() => { const c=findById(myWeekPick.pick2); return `<span style="font-size:1.4rem">${c.emoji}</span> <strong>${c.name}</strong> <button class="slot-remove" data-clear="pick2" style="margin-left:auto">✕</button>`;})() : '<span style="color:rgba(255,255,255,.25);font-family:\'Barlow Condensed\',sans-serif">Klikni pro výběr…</span>'}
+          </div>
+        </div>
+      </div>
+
+      <div id="weekly-contestant-grid"></div>
+
+      <button class="btn-save-big" id="btn-save-weekly" ${hasBothPicks?'':'disabled'}>💾 Uložit tipy</button>
+      <span class="save-ok" id="weekly-save-ok">✓ Uloženo!</span>
+    `;
+
+    renderWeeklyContestantGrid(openWeek, myWeekPick);
+
+    // Slot clicks
+    area.querySelectorAll('.weekly-pick-slot').forEach(slot => {
+      slot.onclick = (e) => {
+        if(e.target.dataset.clear) return;
+        const slotName = slot.dataset.slot;
+        openWeeklyPicker(openWeek.id, slotName, myWeekPick);
+      };
+    });
+    area.querySelectorAll('[data-clear]').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        myData.weekly = myData.weekly||{};
+        myData.weekly[openWeek.id] = myData.weekly[openWeek.id]||{pick1:null,pick2:null};
+        myData.weekly[openWeek.id][btn.dataset.clear] = null;
+        renderWeekly();
+      };
+    });
+    $('btn-save-weekly').onclick = () => saveWeeklyPick(openWeek.id);
+
+  } else {
+    area.innerHTML = `<div class="week-status week-closed"><span class="week-dot"></span>Žádné kolo není momentálně otevřeno</div>
+      <p class="section-sub">Admin otevře nové kolo před každou epizodou.</p>`;
+  }
+
+  // Past rounds
+  if(closedWeeks.length) {
+    resultsArea.innerHTML = `<h3 style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:.08em;color:var(--sand);margin-bottom:16px;margin-top:32px">Výsledky minulých kol</h3>` +
+      closedWeeks.map(w => renderWeekResult(w)).join('');
+    resultsArea.querySelectorAll('.week-round-header').forEach(h => {
+      h.onclick = () => h.nextElementSibling.classList.toggle('open');
+    });
+  } else {
+    resultsArea.innerHTML = '';
+  }
+}
+
+function renderWeeklyContestantGrid(openWeek, myWeekPick) {
+  const grid = $('weekly-contestant-grid');
+  if(!grid) return;
+  const active = getAllC().filter(c => !gameState.eliminated?.some(e=>e.id===c.id));
+  const nominees = openWeek.nominees || [];
+
+  // If admin set nominees, show only them; otherwise show all
+  const showList = nominees.length ? active.filter(c=>nominees.includes(c.id)) : active;
+
+  grid.innerHTML = `
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">${nominees.length ? 'Nominovaní soutěžící:' : 'Všichni aktivní soutěžící (kmeny budou upřesněny):'}</p>
+    <div class="contestants-grid">
+      ${showList.map(c => {
+        const isPick1 = myWeekPick.pick1===c.id;
+        const isPick2 = myWeekPick.pick2===c.id;
+        let cls = 'contestant-card';
+        if(isPick1) cls += ' selected';
+        if(isPick2) cls += ' selected selected-blue';
+        return `<div class="${cls}" data-id="${c.id}">
+          ${isPick1?'<div class="pick-badge winner" style="background:var(--gold)">1</div>':''}
+          ${isPick2?'<div class="pick-badge winner" style="background:var(--water);color:white">2</div>':''}
+          <span class="contestant-emoji-sm">${c.emoji}</span>
+          <div class="contestant-name-sm">${c.name}</div>
+          <div class="contestant-desc-sm">${c.desc}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  grid.querySelectorAll('.contestant-card').forEach(card => {
+    card.onclick = () => {
+      const id = card.dataset.id;
+      myData.weekly = myData.weekly||{};
+      myData.weekly[openWeek.id] = myData.weekly[openWeek.id]||{pick1:null,pick2:null};
+      const wp = myData.weekly[openWeek.id];
+      // Cycle: if pick1 → set pick2, if pick2 → clear, if neither → set pick1 (or pick2 if pick1 full)
+      if(wp.pick1===id) { wp.pick1=null; }
+      else if(wp.pick2===id) { wp.pick2=null; }
+      else if(!wp.pick1) { wp.pick1=id; }
+      else if(!wp.pick2) { wp.pick2=id; }
+      else { wp.pick1=id; } // replace pick1
+      renderWeekly();
+    };
+  });
+}
+
+function openWeeklyPicker(weekId, slotName, currentPick) {
+  // inline — clicking on card grid handles it, but slot click scrolls to grid
+  const grid = $('weekly-contestant-grid');
+  if(grid) grid.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+async function saveWeeklyPick(weekId) {
+  const btn=$('btn-save-weekly');
+  btn.disabled=true; btn.textContent='⏳…';
+  await saveMyData();
+  btn.textContent='💾 Uložit tipy'; btn.disabled=false;
+  flash('weekly-save-ok');
+}
+
+function renderWeekResult(w) {
+  const picks = Object.entries(allPicks).map(([uid, data]) => ({
+    nick: data.nick || uid,
+    pick1: data.weekly?.[w.id]?.pick1 || data.weekly?.[w.id] || null,  // backwards compat
+    pick2: data.weekly?.[w.id]?.pick2 || null,
+  })).filter(p=>p.pick1||p.pick2);
+
+  const results = w.results || (w.result ? [w.result] : []); // array of eliminated ids
+  const resultCs = results.map(id => findById(id)).filter(Boolean);
+
+  const countHits = (p) => {
+    let hits=0;
+    if(p.pick1 && results.includes(p.pick1)) hits++;
+    if(p.pick2 && results.includes(p.pick2)) hits++;
+    return hits;
+  };
+
+  const totalHit2 = picks.filter(p=>countHits(p)===2).length;
+  const totalHit1 = picks.filter(p=>countHits(p)===1).length;
+
+  return `<div class="week-round">
+    <div class="week-round-header">
+      <div class="week-round-title">Kolo ${w.weekNum} <span style="font-weight:400;color:var(--muted);font-size:.85rem">${w.label||''}</span></div>
+      <div class="week-round-meta">
+        ${resultCs.length ? resultCs.map(c=>`${c.emoji} ${c.name}`).join(', ') : 'Výsledek čeká'}
+        ${resultCs.length ? `&nbsp;·&nbsp; ${totalHit2}× oba správně, ${totalHit1}× jeden správně` : ''}
+      </div>
+    </div>
+    <div class="week-round-body">
+      ${resultCs.length ? `<p style="margin-bottom:10px;font-size:.85rem">Vyřazeni: <strong>${resultCs.map(c=>`${c.emoji} ${c.name}`).join(' & ')}</strong></p>` : '<p style="color:var(--muted);font-size:.85rem;margin-bottom:10px">Výsledek ještě nebyl zadán.</p>'}
+      <div class="picks-row">
+        ${picks.map(p => {
+          const hits = countHits(p);
+          const cls = !results.length ? 'pending' : hits===2 ? 'hit' : hits===1 ? 'pending' : 'miss';
+          const c1=p.pick1?findById(p.pick1):null;
+          const c2=p.pick2?findById(p.pick2):null;
+          const hitMark = !results.length ? '' : hits===2 ? ' ✓✓' : hits===1 ? ' ✓' : ' ✗';
+          return `<span class="pick-pill ${cls}">
+            ${c1?c1.emoji:''} ${c1?c1.name:'?'} & ${c2?c2.emoji:''} ${c2?c2.name:'?'}${hitMark}
+            <em style="font-weight:400;opacity:.7"> — ${p.nick}</em>
+          </span>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   TAB: BONUS
+═══════════════════════════════════════════════ */
+function renderBonus() {
+  const area = $('bonus-area');
+  const now = new Date();
+  const bonusOpen = now >= BONUS_OPEN_DATE || gameState.bonusOpen;
+
+  if(!bonusOpen) {
+    // countdown
+    const diff = BONUS_OPEN_DATE - now;
+    const days = Math.floor(diff/86400000);
+    const hours = Math.floor((diff%86400000)/3600000);
+    const mins = Math.floor((diff%3600000)/60000);
+    area.innerHTML = `<div class="bonus-locked">
+      <div class="bonus-locked-icon">🔒</div>
+      <h3>Bonusové tipování se otevře 27. 2. 2026</h3>
+      <p>Připrav se na velké vsázky. Bude záležet i na pořadí!</p>
+      <div class="countdown">${days}d ${hours}h ${mins}m</div>
+    </div>`;
+    return;
+  }
+
+  const far  = myData.bonusFar  || Array(5).fill(null);
+  const out  = myData.bonusOut  || Array(5).fill(null);
+  const rankLabels = ['🥇','🥈','🥉','4.','5.'];
+  const rankCls    = ['gold','silver','bronze','',''];
+
+  const renderSlots = (arr, prefix, title, subtitle) => {
+    const slots = arr.map((id,i) => {
+      const c = id?findById(id):null;
+      const isFirstOutSlot = prefix==='out';
+      return `<div class="bonus-slot${c?' filled':''}${isFirstOutSlot?' first-out-slot':''}" data-prefix="${prefix}" data-slot="${i}">
+        <div class="slot-num ${rankCls[i]}">${rankLabels[i]}</div>
+        ${c ? `<div class="slot-filled-inner">
+            <span class="slot-emoji">${c.emoji}</span>
+            <div><div class="slot-name">${c.name}</div><div class="slot-desc">${c.desc}</div></div>
+            <button class="slot-remove" data-prefix="${prefix}" data-slot="${i}">✕</button>
+          </div>`
+          : `<span class="slot-empty-txt">Klikni pro výběr…</span>`}
+      </div>`;
+    }).join('');
+    return `<h4 style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">${title}</h4>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">${subtitle}</p>
+      <div class="bonus-list">${slots}</div>`;
+  };
+
+  area.innerHTML = renderSlots(far,'far','🏆 Top 5 — dojdou nejdál','Seřaď od 1. místa (vítěz) do 5. místa. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
+    renderSlots(out,'out','💀 Top 5 — vypadnou jako první','Seřaď od 1. (první vyřazený) do 5. místa. Stejný bodový systém.') +
+    `<button class="btn-save-big" id="btn-save-bonus">💾 Uložit bonusový tip</button>
+     <span class="save-ok" id="bonus-save-ok">✓ Uloženo!</span>`;
+
+  // Slot clicks
+  area.querySelectorAll('.bonus-slot').forEach(slot => {
+    slot.onclick = (e) => {
+      if(e.target.classList.contains('slot-remove')||e.target.closest('.slot-remove')) return;
+      openPicker(slot.dataset.prefix==='far'?'bonus-far':'bonus-out', parseInt(slot.dataset.slot));
+    };
+  });
+  area.querySelectorAll('.slot-remove').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const p=btn.dataset.prefix, s=parseInt(btn.dataset.slot);
+      if(p==='far') myData.bonusFar[s]=null; else myData.bonusOut[s]=null;
+      renderBonus();
+    };
+  });
+  $('btn-save-bonus').onclick = async () => {
+    const btn=$('btn-save-bonus'); btn.disabled=true; btn.textContent='⏳…';
+    await saveMyData();
+    btn.textContent='💾 Uložit bonusový tip'; btn.disabled=false;
+    flash('bonus-save-ok');
+  };
+}
+
+/* ═══════════════════════════════════════════════
+   PICKER OVERLAY
+═══════════════════════════════════════════════ */
+function openPicker(mode, slot=null) {
+  pickerMode=mode; pickerSlot=slot; pickerSelected=null;
+  const titles = {winner:'Vyber vítěze sezóny','bonus-far':'Vyber soutěžícího — nejdál','bonus-out':'Vyber soutěžícího — první ven', weekly:'Vyber soutěžícího'};
+  $('picker-title').textContent = titles[mode]||'Vyber soutěžícího';
+  $('picker-confirm').style.display='none';
+  renderPickerGrid();
+  $('picker-overlay').classList.add('open');
+}
+
+function renderPickerGrid() {
+  const grid = $('picker-grid');
+  // Already picked in bonus slots
+  const alreadyFar = (myData.bonusFar||[]).filter(Boolean);
+  const alreadyOut = (myData.bonusOut||[]).filter(Boolean);
+
+  const renderGroup = (label, cls, list) => {
+    return `<div class="tribe-label ${cls}" style="margin-top:12px">${label}</div>
+      <div class="contestants-grid" style="margin-bottom:8px">${list.map(c=>{
+        const elim = gameState.eliminated?.some(e=>e.id===c.id);
+        let alreadyPicked = false;
+        if(pickerMode==='bonus-far') alreadyPicked = alreadyFar.includes(c.id) && myData.bonusFar[pickerSlot]!==c.id;
+        if(pickerMode==='bonus-out') alreadyPicked = alreadyOut.includes(c.id) && myData.bonusOut[pickerSlot]!==c.id;
+        const isSelected = pickerSelected===c.id;
+        let cls2='contestant-card';
+        if(isSelected) cls2+=' selected';
+        if(elim) cls2+=' eliminated';
+        if(alreadyPicked) cls2+=' already-picked';
+        return `<div class="${cls2}" data-id="${c.id}">
+          ${elim?`<div class="elim-badge">out</div>`:''}
+          <span class="contestant-emoji-sm">${c.emoji}</span>
+          <div class="contestant-name-sm">${c.name}</div>
+        </div>`;
+      }).join('')}</div>`;
+  };
+
+  grid.innerHTML = renderGroup('🌴 Známé tváře','tribe-a',CONTESTANTS.celebs) +
+                   renderGroup('🧑 Ostatní','tribe-b',CONTESTANTS.civilian);
+
+  grid.querySelectorAll('.contestant-card:not(.eliminated):not(.already-picked)').forEach(card=>{
+    card.onclick = () => {
+      pickerSelected = card.dataset.id;
+      confirmPick();
+    };
+  });
+}
+
+function confirmPick() {
+  if(!pickerSelected) return;
+  if(pickerMode==='winner') {
+    quickPickWinner(pickerSelected);
+  } else if(pickerMode==='bonus-far') {
+    myData.bonusFar[pickerSlot] = pickerSelected;
+    renderBonus();
+  } else if(pickerMode==='bonus-out') {
+    myData.bonusOut[pickerSlot] = pickerSelected;
+    renderBonus();
+  }
+  closePicker();
+}
+
+function closePicker() {
+  $('picker-overlay').classList.remove('open');
+  pickerMode=null; pickerSlot=null; pickerSelected=null;
+}
+
+/* ═══════════════════════════════════════════════
+   SCORING
+═══════════════════════════════════════════════ */
+function calcScore(data) {
+  const elim = gameState.eliminated||[];
+  const weeks = gameState.weeks||[];
+  let score=0; const breakdown={};
+
+  // Winner: show tick/cross, no points (separate prize)
+  breakdown.winner = data.winner;
+  breakdown.winnerCorrect = false;
+  // (we'll show who they picked; actual winner unknown until end)
+
+  // Weekly tips: count hits (2 picks per week, 2 results per week)
+  let weekHits=0, weekTotal=0;
+  weeks.filter(w=>w.closed&&w.results?.length).forEach(w=>{
+    const results = w.results||[];
+    weekTotal+=2;
+    const pick1 = data.weekly?.[w.id]?.pick1 || null;
+    const pick2 = data.weekly?.[w.id]?.pick2 || null;
+    if(pick1 && results.includes(pick1)) weekHits++;
+    if(pick2 && results.includes(pick2)) weekHits++;
+  });
+  breakdown.weekHits=weekHits;
+  breakdown.weekTotal=weekTotal;
+
+  // Bonus FAR (who goes furthest — reverse order of elimination means last eliminated = furthest)
+  // eliminated array is ordered by elimination order (first eliminated = index 0)
+  // top 5 furthest = last 5 in elimination (or still in game)
+  const totalPlayers = getAllC().length;
+  const elimOrder = elim.map(e=>e.id); // first out first
+  // rank for "how far" = reverse elimination order + still in game
+  const getRankFar = (id) => {
+    const elimIdx = elimOrder.indexOf(id);
+    if(elimIdx===-1) return totalPlayers; // still in game
+    return totalPlayers - elimIdx;
+  };
+  const getRankOut = (id) => {
+    const elimIdx = elimOrder.indexOf(id);
+    if(elimIdx===-1) return 999; // still in game = bad for "first out"
+    return elimIdx + 1; // 1 = first eliminated
+  };
+
+  let bonusFarScore=0;
+  (data.bonusFar||[]).forEach((id,i)=>{
+    if(!id) return;
+    const actualRank = getRankFar(id);
+    // Top 5 furthest by actual rank
+    const top5far = getAllC().map(c=>({id:c.id,rank:getRankFar(c.id)})).sort((a,b)=>b.rank-a.rank).slice(0,5).map(x=>x.id);
+    if(top5far.includes(id)) {
+      if(top5far[i]===id) bonusFarScore+=20; // exact position
+      else bonusFarScore+=10; // in top 5 but wrong position
+    }
+  });
+  breakdown.bonusFarScore=bonusFarScore;
+  score+=bonusFarScore;
+
+  let bonusOutScore=0;
+  (data.bonusOut||[]).forEach((id,i)=>{
+    if(!id) return;
+    const top5out = getAllC().map(c=>({id:c.id,rank:getRankOut(c.id)})).filter(x=>x.rank<999).sort((a,b)=>a.rank-b.rank).slice(0,5).map(x=>x.id);
+    if(top5out.includes(id)) {
+      if(top5out[i]===id) bonusOutScore+=20;
+      else bonusOutScore+=10;
+    }
+  });
+  breakdown.bonusOutScore=bonusOutScore;
+  score+=bonusOutScore;
+
+  score+=weekHits; // 1 bod za kazdeho trefeneho
+  breakdown.total=score;
+  return breakdown;
+}
+
+/* ═══════════════════════════════════════════════
+   LEADERBOARD
+═══════════════════════════════════════════════ */
+function renderLeaderboard() {
+  const area = $('leaderboard-area');
+  if(!area) return;
+  const entries = Object.entries(allPicks).map(([uid,data])=>({
+    uid, nick:data.nick||uid, data, score:calcScore(data)
+  })).sort((a,b)=>b.score.total-a.score.total);
+
+  if(!entries.length){area.innerHTML='<p style="color:var(--muted)">Zatím žádné tipy.</p>';return;}
+
+  const myNick = nick(currentUser);
+  const closedWeeks = (gameState.weeks||[]).filter(w=>w.closed && w.results?.length);
+  const allWeeks = gameState.weeks||[];
+  const openWeek = allWeeks.find(w=>!w.closed);
+
+  // ── HLAVNÍ TABULKA ──────────────────────────────────────
+  const mainTable = `<table class="lb-table">
+    <thead><tr>
+      <th>#</th>
+      <th>Hráč</th>
+      <th>🏆 Vítěz</th>
+      <th>📅 Týdny</th>
+      <th>🎯 Bonus</th>
+      <th>Σ Body</th>
+    </tr></thead>
+    <tbody>${entries.map((e,i)=>{
+      const isMe = e.nick===myNick;
+      const rc = i<3?`rank-${i+1}`:'';
+      const winC = e.data.winner?findById(e.data.winner):null;
+      return `<tr ${isMe?'style="background:rgba(244,165,34,.06)"':''}>
+        <td><span class="rank-num ${rc}">${i+1}</span></td>
+        <td><strong>${e.nick}</strong>${isMe?' <span style="color:var(--gold);font-size:.7rem">(ty)</span>':''}</td>
+        <td>${winC?`<span class="chip chip-w">${winC.emoji} ${winC.name}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+        <td>
+          <span style="font-family:'Bebas Neue',cursive;font-size:1.2rem;color:${e.score.weekHits>0?'var(--green)':'var(--muted)'}">${e.score.weekHits}</span>
+          <span style="color:var(--muted);font-size:.75rem"> / ${e.score.weekTotal} b</span>
+        </td>
+        <td><span class="chip chip-b">${e.score.bonusFarScore}b</span> <span class="chip chip-fo">${e.score.bonusOutScore}b</span></td>
+        <td><span class="score-big">${e.score.total}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+
+  // ── TÝDENNÍ TIPY DETAIL ─────────────────────────────────
+  let weeklyDetail = '';
+  if(allWeeks.length > 0) {
+    // Columns: hráč | kolo1 | kolo2 | ... | celkem
+    // Show closed weeks + current open week
+    const displayWeeks = [...closedWeeks];
+    if(openWeek) displayWeeks.push(openWeek);
+
+    const weekCols = displayWeeks.map(w=>`
+      <th style="text-align:center;white-space:nowrap">
+        Kolo ${w.weekNum}
+        ${w.label?`<br><span style="font-weight:400;font-size:.7rem;letter-spacing:.05em;text-transform:none;color:var(--muted)">${w.label}</span>`:''}
+        ${w.closed && w.results?.length ? `<br><span style="color:var(--fire);font-weight:400;font-size:.7rem">
+          ${w.results.map(id=>{const c=findById(id);return c?c.name:'?';}).join(' & ')}
+        </span>` : w.closed ? '' : '<br><span style="color:var(--green);font-size:.7rem">⏳ otevřeno</span>'}
+      </th>`).join('');
+
+    const weekRows = entries.map((e,i)=>{
+      const isMe = e.nick===myNick;
+      const rc = i<3?`rank-${i+1}`:'';
+      let rowTotal = 0;
+
+      const weekCells = displayWeeks.map(w=>{
+        const wp = e.data.weekly?.[w.id];
+        const p1 = wp?.pick1||null;
+        const p2 = wp?.pick2||null;
+        const results = w.results||[];
+
+        if(!p1 && !p2) return `<td style="text-align:center;color:rgba(255,255,255,.15)">—</td>`;
+
+        const c1 = p1?findById(p1):null;
+        const c2 = p2?findById(p2):null;
+
+        if(!w.closed || !results.length) {
+          // Open or no result yet — show picks as pending
+          return `<td style="text-align:center">
+            <span style="display:block;font-size:.78rem;color:var(--muted)">${c1?c1.name:'?'}</span>
+            <span style="display:block;font-size:.78rem;color:var(--muted)">${c2?c2.name:'?'}</span>
+          </td>`;
+        }
+
+        const hit1 = p1 && results.includes(p1);
+        const hit2 = p2 && results.includes(p2);
+        const pts = (hit1?1:0)+(hit2?1:0);
+        rowTotal += pts;
+
+        const fmt = (c, hit) => c
+          ? `<span style="display:block;font-size:.78rem;color:${hit?'var(--green)':'var(--red)'};font-weight:${hit?'700':'400'}">${hit?'✓':'✗'} ${c.name}</span>`
+          : '';
+
+        return `<td style="text-align:center">
+          ${fmt(c1,hit1)}
+          ${fmt(c2,hit2)}
+          ${pts>0?`<span style="font-family:'Bebas Neue',cursive;font-size:.95rem;color:var(--green)">+${pts}b</span>`:''}
+        </td>`;
+      }).join('');
+
+      return `<tr ${isMe?'style="background:rgba(244,165,34,.06)"':''}>
+        <td><span class="rank-num ${rc}">${i+1}</span></td>
+        <td><strong>${e.nick}</strong>${isMe?' <span style="color:var(--gold);font-size:.7rem">(ty)</span>':''}</td>
+        ${weekCells}
+        <td style="text-align:center">
+          <span style="font-family:'Bebas Neue',cursive;font-size:1.3rem;color:${e.score.weekHits>0?'var(--green)':'var(--muted)'}">${e.score.weekHits}b</span>
+        </td>
+      </tr>`;
+    }).join('');
+
+    weeklyDetail = `
+      <h3 style="font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:.08em;color:var(--sand);margin:36px 0 12px">
+        📅 Týdenní tipy — detail
+      </h3>
+      <div style="overflow-x:auto">
+        <table class="lb-table" style="min-width:500px">
+          <thead><tr>
+            <th>#</th><th>Hráč</th>
+            ${weekCols}
+            <th style="text-align:center">Celkem</th>
+          </tr></thead>
+          <tbody>${weekRows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  area.innerHTML = mainTable + weeklyDetail;
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN
+═══════════════════════════════════════════════ */
+function showAdminTab() {
+  isAdmin=true;
+  $('admin-toggle-btn').style.display='none';
+  document.querySelectorAll('.admin-tab').forEach(t=>t.style.display='block');
+  switchTab('admin');
+  renderAdmin();
+}
+
+function renderAdmin() {
+  const area = $('admin-area');
+  const elim = gameState.eliminated||[];
+  const weeks = gameState.weeks||[];
+  const active = getAllC().filter(c=>!elim.some(e=>e.id===c.id));
+
+  area.innerHTML = `
+  <div class="admin-panel">
+
+    <div class="admin-section">
+      <h4>➕ Označit vyřazeného soutěžícího</h4>
+      <div class="admin-row">
+        <select id="admin-elim-select">
+          <option value="">— vyber soutěžícího —</option>
+          ${active.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('')}
+        </select>
+        <button class="btn-admin" id="btn-add-elim">Vyřadit</button>
+      </div>
+      <div class="elim-list" id="elim-list">
+        ${elim.map(e=>{const c=findById(e.id);return c?`
+          <div class="elim-chip">#${e.order} ${c.emoji} ${c.name}
+            <button data-id="${e.id}">✕</button>
+          </div>`:''}).join('')}
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <h4>📅 Týdenní kola</h4>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Otevři nové kolo před epizodou. Každé kolo má <strong>dva výsledky</strong> — jeden za každý kmen.</p>
+      <div class="admin-row">
+        <div>
+          <label style="display:block;margin-bottom:4px">Popisek kola (např. "23.2.–1.3.")</label>
+          <input type="text" id="admin-week-label" placeholder="23.2.–1.3." style="min-width:160px">
+        </div>
+        <div>
+          <label style="display:block;margin-bottom:4px">Deadline tipování:</label>
+          <input type="datetime-local" id="admin-week-deadline">
+        </div>
+        <button class="btn-admin success" id="btn-open-week">Otevřít nové kolo</button>
+      </div>
+      <div class="week-list" id="admin-week-list">
+        ${weeks.map(w=>{
+          const rc1 = w.results?.[0] ? findById(w.results[0]) : null;
+          const rc2 = w.results?.[1] ? findById(w.results[1]) : null;
+          const activeForResult = getAllC().filter(c=>!elim.some(e=>e.id===c.id));
+          return `<div class="week-item">
+            <div class="week-item-name">Kolo ${w.weekNum} ${w.label?`· ${w.label}`:''} ${w.closed?'✓ uzavřeno':'⏳ otevřeno'}</div>
+            <div class="week-item-result">
+              ${rc1||rc2 ? `Vyřazeni: ${[rc1,rc2].filter(Boolean).map(c=>`${c.emoji} ${c.name}`).join(' & ')}` : 'bez výsledku'}
+            </div>
+            ${!w.closed?`<button class="btn-admin danger" data-close-week="${w.id}">Uzavřít kolo</button>`:''}
+            ${w.closed && !(w.results?.length>=2) ? `
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;width:100%">
+                <select id="result1-${w.id}"><option value="">1. vyřazený…</option>${activeForResult.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('')}</select>
+                <select id="result2-${w.id}"><option value="">2. vyřazený…</option>${activeForResult.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('')}</select>
+                <button class="btn-admin" data-set-result="${w.id}">Uložit výsledky</button>
+              </div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <h4>🎯 Bonusové tipování</h4>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Bonusové tipování se automaticky otevře 27.2.2026. Lze také otevřít/zavřít ručně.</p>
+      <div class="admin-row">
+        <button class="btn-admin ${gameState.bonusOpen?'danger':'success'}" id="btn-toggle-bonus">
+          ${gameState.bonusOpen?'🔒 Zavřít bonus tipování':'🔓 Otevřít bonus tipování'}
+        </button>
+      </div>
+    </div>
+
+  </div>`;
+
+  // Elim add
+  $('btn-add-elim').onclick = async () => {
+    const id = $('admin-elim-select').value;
+    if(!id) return;
+    const newElim = [...(gameState.eliminated||[]), {id, order:(gameState.eliminated||[]).length+1}];
+    await setDoc(doc(db,'game','state'),{...gameState, eliminated:newElim});
+  };
+  // Elim remove
+  area.querySelectorAll('.elim-chip button').forEach(btn=>{
+    btn.onclick = async () => {
+      const newElim = (gameState.eliminated||[]).filter(e=>e.id!==btn.dataset.id).map((e,i)=>({...e,order:i+1}));
+      await setDoc(doc(db,'game','state'),{...gameState,eliminated:newElim});
+    };
+  });
+  // Open new week
+  $('btn-open-week').onclick = async () => {
+    const deadline = $('admin-week-deadline').value;
+    const label = $('admin-week-label').value.trim();
+    if(!deadline) return alert('Nastav deadline!');
+    const newWeeks=[...(gameState.weeks||[]),{
+      id:'w'+(Date.now()),
+      weekNum:(gameState.weeks||[]).length+1,
+      label: label || '',
+      deadline,
+      closed:false,
+      results:[]
+    }];
+    await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
+  };
+  // Close week
+  area.querySelectorAll('[data-close-week]').forEach(btn=>{
+    btn.onclick = async () => {
+      const wid=btn.dataset.closeWeek;
+      const newWeeks=(gameState.weeks||[]).map(w=>w.id===wid?{...w,closed:true}:w);
+      await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
+    };
+  });
+  // Set 2 results
+  area.querySelectorAll('[data-set-result]').forEach(btn=>{
+    btn.onclick = async () => {
+      const wid=btn.dataset.setResult;
+      const r1=$(`result1-${wid}`)?.value;
+      const r2=$(`result2-${wid}`)?.value;
+      if(!r1||!r2) return alert('Vyber oba vyřazené soutěžící!');
+      if(r1===r2) return alert('Vyber dva různé soutěžící!');
+      const newWeeks=(gameState.weeks||[]).map(w=>w.id===wid?{...w,results:[r1,r2]}:w);
+      await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
+    };
+  });
+  // Toggle bonus
+  $('btn-toggle-bonus').onclick = async () => {
+    await setDoc(doc(db,'game','state'),{...gameState,bonusOpen:!gameState.bonusOpen});
+  };
+}
+
+/* ═══════════════════════════════════════════════
+   SAVE MY DATA
+═══════════════════════════════════════════════ */
+async function saveMyData() {
+  await setDoc(doc(db,'picks',currentUser.uid),{
+    ...myData, nick:nick(currentUser), updatedAt:new Date().toISOString()
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════ */
+function switchTab(tabId) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tabId));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id==='tab-'+tabId));
+}
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick = ()=>switchTab(t.dataset.tab);
+});
+
+/* ═══════════════════════════════════════════════
+   EVENT LISTENERS
+═══════════════════════════════════════════════ */
+$('auth-btn').onclick = () => isReg?doRegister():doLogin();
+$('auth-switch-link').onclick = () => setAuthMode(!isReg);
+$('btn-logout').onclick = () => signOut(auth);
+$('picker-close').onclick = closePicker;
+$('picker-overlay').onclick = e=>{ if(e.target===$('picker-overlay')) closePicker(); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePicker(); });
+
+$('admin-toggle-btn').onclick = () => {
+  const pw = prompt('Admin heslo:');
+  if(pw===ADMIN_PASSWORD) showAdminTab();
+  else if(pw!==null) alert('Špatné heslo.');
+};
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&$('auth-screen').style.display!=='none') isReg?doRegister():doLogin();
+});
+</script>
+</body>
+</html>
