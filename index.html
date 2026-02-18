@@ -359,6 +359,10 @@ input[type="datetime-local"]:focus{border-color:var(--gold)}
 
 </main>
 
+<!-- EMAILJS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>emailjs.init("K6U_ZHHdLMllHrwRF");</script>
+
 <!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -687,6 +691,14 @@ async function quickPickWinner(id) {
   await saveMyData();
   flash('winner-save-ok');
   renderBasic();
+  // Email notifikace
+  try {
+    const c = findById(id);
+    await emailjs.send("service_bhx3iro", EMAILJS_WINNER_TEMPLATE, {
+      nickname: nick(currentUser),
+      winner: c ? `${c.emoji} ${c.name} (${c.desc})` : id,
+    });
+  } catch(e) { console.warn('EmailJS chyba:', e); }
 }
 
 /* ═══════════════════════════════════════════════
@@ -850,10 +862,30 @@ function openWeeklyPicker(weekId, slotName, currentPick) {
   if(grid) grid.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
+const EMAILJS_WINNER_TEMPLATE = "template_kw99y0v"; // doplň po vytvoření šablony
+
+async function sendWeeklyNotification(weekId, pick1id, pick2id) {
+  try {
+    const c1 = pick1id ? findById(pick1id) : null;
+    const c2 = pick2id ? findById(pick2id) : null;
+    const week = (gameState.weeks||[]).find(w=>w.id===weekId);
+    await emailjs.send("service_bhx3iro", "template_dx3oh2m", {
+      nickname: nick(currentUser),
+      pick1: c1 ? `${c1.emoji} ${c1.name}` : '—',
+      pick2: c2 ? `${c2.emoji} ${c2.name}` : '—',
+      week_label: week ? `Kolo ${week.weekNum}${week.label ? ' · ' + week.label : ''}` : weekId,
+    });
+  } catch(e) {
+    console.warn('EmailJS chyba:', e);
+  }
+}
+
 async function saveWeeklyPick(weekId) {
   const btn=$('btn-save-weekly');
   btn.disabled=true; btn.textContent='⏳…';
   await saveMyData();
+  const wp = myData.weekly?.[weekId] || {};
+  await sendWeeklyNotification(weekId, wp.pick1||null, wp.pick2||null);
   btn.textContent='💾 Uložit tipy'; btn.disabled=false;
   flash('weekly-save-ok');
 }
