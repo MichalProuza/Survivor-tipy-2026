@@ -508,6 +508,7 @@ async function initApp() {
   $('app-screen').style.display='block';
   const n = nick(currentUser);
   $('user-display-name').textContent = n;
+  $('admin-toggle-btn').style.display = 'block';
   $('user-avatar').textContent = n[0].toUpperCase();
 
   // load my picks
