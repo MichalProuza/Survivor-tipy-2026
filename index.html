@@ -1137,7 +1137,12 @@ function renderLeaderboard() {
       return `<tr ${isMe?'style="background:rgba(244,165,34,.06)"':''}>
         <td><span class="rank-num ${rc}">${i+1}</span></td>
         <td><strong>${e.nick}</strong>${isMe?' <span style="color:var(--gold);font-size:.7rem">(ty)</span>':''}</td>
-        <td>${winC?`<span class="chip chip-w">${winC.emoji} ${winC.name}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+        <td>${(() => {
+          if(!winC) return '<span style="color:var(--muted)">—</span>';
+          const isElim = (gameState.eliminated||[]).some(el=>el.id===e.data.winner);
+          if(isElim) return `<span class="chip" style="background:rgba(192,57,43,.15);color:#e07070;border:1px solid rgba(192,57,43,.3);text-decoration:line-through">${winC.emoji} ${winC.name}</span> <span style="font-size:.7rem;color:#e07070">☠️ vyřazen</span>`;
+          return `<span class="chip chip-w">${winC.emoji} ${winC.name}</span>`;
+        })()}</td>
         <td>
           <span style="font-family:'Bebas Neue',cursive;font-size:1.2rem;color:${e.score.weekHits>0?'var(--green)':'var(--muted)'}">${e.score.weekHits}</span>
           <span style="color:var(--muted);font-size:.75rem"> / ${e.score.weekTotal} b</span>
