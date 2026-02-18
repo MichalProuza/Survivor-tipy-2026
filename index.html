@@ -2,13 +2,25 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<!-- PWA meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Survivor Tipy">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1209">
+<meta name="description" content="Tipovací soutěž Survivor Česko & Slovensko V 2026">
+
+<!-- PWA icons (inline SVG as data URI) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%231a1209'/%3E%3Ctext x='256' y='320' font-size='280' text-anchor='middle'%3E🌴%3C/text%3E%3Ctext x='256' y='460' font-size='72' text-anchor='middle' fill='%23f4a522' font-family='Arial' font-weight='bold'%3ETIPY%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Survivor+Tipy+2026%22%2C%22short_name%22%3A%22Survivor%22%2C%22description%22%3A%22Tipov%C3%A1c%C3%AD+sout%C4%9B%C5%BE+Survivor+%C4%8Cesko+%26+Slovensko+V%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231a1209%22%2C%22theme_color%22%3A%22%231a1209%22%2C%22orientation%22%3A%22portrait%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527%2520viewBox%3D%25270%25200%2520512%2520512%2527%253E%253Crect%2520width%3D%2527512%2527%2520height%3D%2527512%2527%2520rx%3D%2527100%2527%2520fill%3D%2527%25231a1209%2527%2F%253E%253Ctext%2520x%3D%2527256%2527%2520y%3D%2527320%2527%2520font-size%3D%2527280%2527%2520text-anchor%3D%2527middle%2527%253E%25F0%259F%258C%25B4%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
 <title>Survivor Tipy 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--sand:#e8d5a3;--dark:#1a1209;--jungle:#2d4a1e;--fire:#e85d04;--gold:#f4a522;--water:#1a6fa8;--cream:#fdf6e3;--muted:#8a7a5a;--green:#4a9e3a;--red:#c0392b}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Barlow',sans-serif;background:var(--dark);color:var(--cream);min-height:100vh;overflow-x:hidden}
+body{font-family:'Barlow',sans-serif;background:var(--dark);color:var(--cream);min-height:100vh;min-height:-webkit-fill-available;overflow-x:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   background:radial-gradient(ellipse 80% 50% at 20% 0%,rgba(232,93,4,.12) 0%,transparent 60%),
              radial-gradient(ellipse 60% 40% at 80% 100%,rgba(45,74,30,.3) 0%,transparent 50%)}
@@ -358,6 +370,26 @@ input[type="datetime-local"]:focus{border-color:var(--gold)}
 </div>
 
 </main>
+
+<!-- iOS INSTALL BANNER -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;background:linear-gradient(135deg,#1e1508,#2d1a05);border-top:1px solid rgba(244,165,34,.3);padding:14px 20px calc(14px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+  <span style="font-size:1.8rem">🌴</span>
+  <div style="flex:1">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;color:var(--sand)">Přidat na plochu</div>
+    <div style="font-size:.78rem;color:var(--muted)">Klepni na <strong style="color:var(--gold)">Sdílet</strong> → <strong style="color:var(--gold)">Přidat na plochu</strong></div>
+  </div>
+  <button onclick="document.getElementById('pwa-banner').style.display='none';localStorage.setItem('pwa-dismissed','1')" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:3px;padding:6px 12px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:.8rem;cursor:pointer">Zavřít</button>
+</div>
+
+<script>
+// Show install banner on iOS Safari (not in standalone mode)
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone;
+const dismissed = localStorage.getItem('pwa-dismissed');
+if(isIOS && !isStandalone && !dismissed) {
+  setTimeout(() => { document.getElementById('pwa-banner').style.display='flex'; }, 3000);
+}
+</script>
 
 <!-- EMAILJS -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
