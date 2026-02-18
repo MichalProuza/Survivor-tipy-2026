@@ -530,7 +530,7 @@ async function initApp() {
         id: 'w_week1',
         weekNum: 1,
         label: '23. 2. – 1. 3. 2026',
-        deadline: '2026-03-01T22:00',
+        deadline: '2026-02-20T23:59',
         closed: false,
         results: []
       };
@@ -711,9 +711,14 @@ function renderWeekly() {
     const tribeBLabel = openWeek.tribeB || 'Kmen B';
     const hasTribeNominees = openWeek.nominees && openWeek.nominees.length > 0;
 
+    const weekCountdownId = 'week-countdown-' + openWeek.id;
     area.innerHTML = `
       <div class="week-status week-open"><span class="week-dot"></span>
-        Kolo ${openWeek.weekNum} · 23. 2. – 1. 3. 2026 · Deadline: ${deadline.toLocaleDateString('cs-CZ')} ${deadline.toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'})}
+        Kolo ${openWeek.weekNum}${openWeek.label ? ' · ' + openWeek.label : ''} · Deadline: ${deadline.toLocaleDateString('cs-CZ')} ${deadline.toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'})}
+      </div>
+      <div style="margin-bottom:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)">⏳ Zbývá:</span>
+        <span id="${weekCountdownId}" style="font-family:'Bebas Neue',cursive;font-size:2rem;color:var(--fire);letter-spacing:.08em">--:--:--</span>
       </div>
       <p class="section-sub" style="margin-bottom:20px">Vyber <strong>dva soutěžící</strong>, kteří budou tento týden vyřazeni — po jednom za každý kmen.</p>
 
@@ -743,6 +748,20 @@ function renderWeekly() {
     `;
 
     renderWeeklyContestantGrid(openWeek, myWeekPick);
+
+    // Countdown ticker
+    if(window._weekCountdownInterval) clearInterval(window._weekCountdownInterval);
+    window._weekCountdownInterval = setInterval(() => {
+      const el = document.getElementById(weekCountdownId);
+      if(!el) { clearInterval(window._weekCountdownInterval); return; }
+      const diff = deadline - new Date();
+      if(diff <= 0) { el.textContent = 'UZAVŘENO'; el.style.color='var(--red)'; clearInterval(window._weekCountdownInterval); return; }
+      const d = Math.floor(diff/86400000);
+      const h = Math.floor((diff%86400000)/3600000);
+      const m = Math.floor((diff%3600000)/60000);
+      const s = Math.floor((diff%60000)/1000);
+      el.textContent = d>0 ? `${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }, 1000);
 
     // Slot clicks
     area.querySelectorAll('.weekly-pick-slot').forEach(slot => {
