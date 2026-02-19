@@ -287,6 +287,7 @@ input[type="datetime-local"]:focus{border-color:var(--gold)}
     </div>
     <div class="top-bar-right">
       <button class="btn-sm admin-btn" id="admin-toggle-btn" style="display:none">👑 Admin</button>
+      <button class="btn-sm" id="btn-notif" title="Povolit připomenutí deadlinu" style="display:none">🔔</button>
       <button class="btn-sm" id="btn-logout">Odhlásit</button>
     </div>
   </div>
@@ -372,7 +373,7 @@ input[type="datetime-local"]:focus{border-color:var(--gold)}
 </main>
 
 <!-- iOS INSTALL BANNER -->
-<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;background:linear-gradient(135deg,#1e1508,#2d1a05);border-top:1px solid rgba(244,165,34,.3);padding:14px 20px calc(14px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;background:linear-gradient(135deg,#1e1508,#2d1a05);border-top:1px solid rgba(244,165,34,.3);padding:14px 20px calc(14px + env(safe-area-inset-bottom));align-items:center;gap:14px;flex-wrap:wrap">
   <span style="font-size:1.8rem">🌴</span>
   <div style="flex:1">
     <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;color:var(--sand)">Přidat na plochu</div>
@@ -382,12 +383,17 @@ input[type="datetime-local"]:focus{border-color:var(--gold)}
 </div>
 
 <script>
-// Show install banner on iOS Safari (not in standalone mode)
+// Show install banner only if NOT already installed as PWA
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isStandalone = window.navigator.standalone;
+const isStandaloneIOS = window.navigator.standalone === true;
+const isStandaloneAndroid = window.matchMedia('(display-mode: standalone)').matches;
+const isStandalone = isStandaloneIOS || isStandaloneAndroid;
 const dismissed = localStorage.getItem('pwa-dismissed');
 if(isIOS && !isStandalone && !dismissed) {
-  setTimeout(() => { document.getElementById('pwa-banner').style.display='flex'; }, 3000);
+  setTimeout(() => {
+    const banner = document.getElementById('pwa-banner');
+    banner.style.display = 'flex';
+  }, 3000);
 }
 </script>
 
@@ -545,6 +551,10 @@ async function initApp() {
   const n = nick(currentUser);
   $('user-display-name').textContent = n;
   $('admin-toggle-btn').style.display = 'block';
+  // Show notification bell if supported and not yet decided
+  if('Notification' in window && Notification.permission === 'default') {
+    $('btn-notif').style.display = 'block';
+  }
   $('user-avatar').textContent = n[0].toUpperCase();
 
   // load my picks
@@ -576,6 +586,7 @@ async function initApp() {
     }
 
     renderAll();
+    scheduleDeadlineNotification();
   });
 
   // subscribe all picks for leaderboard
@@ -591,6 +602,59 @@ async function initApp() {
 /* ═══════════════════════════════════════════════
    RENDER ALL
 ═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   PUSH NOTIFIKACE — deadline reminder
+═══════════════════════════════════════════════ */
+async function requestNotificationPermission() {
+  if(!('Notification' in window)) return false;
+  if(Notification.permission === 'granted') return true;
+  if(Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+function scheduleDeadlineNotification() {
+  if(!('Notification' in window)) return;
+  const weeks = gameState.weeks || [];
+  const now = new Date();
+  const openWeek = weeks.find(w => !w.closed && w.deadline && new Date(w.deadline) > now);
+  if(!openWeek) return;
+
+  const deadline = new Date(openWeek.deadline);
+  const reminderTime = new Date(deadline.getTime() - 60 * 60 * 1000); // 1 hod před
+  const msUntilReminder = reminderTime - now;
+
+  // Clear any existing timer
+  if(window._deadlineNotifTimer) clearTimeout(window._deadlineNotifTimer);
+
+  if(msUntilReminder <= 0) return; // už prošlo
+
+  window._deadlineNotifTimer = setTimeout(async () => {
+    const granted = await requestNotificationPermission();
+    if(!granted) return;
+    const reg = await navigator.serviceWorker?.ready;
+    if(reg) {
+      reg.showNotification('⏳ Survivor Tipy — připomenutí', {
+        body: `Zbývá 1 hodina na týdenní tip! Kolo ${openWeek.weekNum}${openWeek.label ? ' · ' + openWeek.label : ''}.`,
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌴</text></svg>',
+        badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌴</text></svg>',
+        tag: 'survivor-deadline',
+        renotify: true,
+        vibrate: [200, 100, 200],
+      });
+    } else {
+      // Fallback bez service workeru
+      new Notification('⏳ Survivor Tipy — připomenutí', {
+        body: `Zbývá 1 hodina na týdenní tip! Kolo ${openWeek.weekNum}${openWeek.label ? ' · ' + openWeek.label : ''}.`,
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌴</text></svg>',
+        tag: 'survivor-deadline',
+      });
+    }
+  }, msUntilReminder);
+
+  console.log(`Notifikace naplánována za ${Math.round(msUntilReminder/60000)} minut`);
+}
+
 function renderAll() {
   renderBasic();
   renderWeekly();
@@ -1500,6 +1564,42 @@ $('admin-toggle-btn').onclick = () => {
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&$('auth-screen').style.display!=='none') isReg?doRegister():doLogin();
+});
+</script>
+<script>
+// Service Worker registration
+if('serviceWorker' in navigator) {
+  const swCode = `
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow('/Survivor-tipy-2026/'));
+});
+self.addEventListener('push', e => {
+  const data = e.data ? e.data.json() : {};
+  e.waitUntil(self.registration.showNotification(data.title||'Survivor Tipy', {
+    body: data.body||'',
+    icon: data.icon||'',
+    tag: 'survivor-push',
+  }));
+});`;
+  const blob = new Blob([swCode], {type: 'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(e => console.warn('SW:', e));
+}
+
+// Bell button
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btn-notif');
+  if(btn) btn.onclick = async () => {
+    const granted = await Notification.requestPermission();
+    if(granted === 'granted') {
+      btn.style.display = 'none';
+      scheduleDeadlineNotification();
+      alert('✅ Připomenutí povoleno! Dostaneš notifikaci hodinu před deadlinem.');
+    } else {
+      alert('Notifikace jsou zakázány. Povol je v nastavení prohlížeče.');
+    }
+  };
 });
 </script>
 </body>
