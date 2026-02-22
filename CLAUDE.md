@@ -1,22 +1,14 @@
-# CLAUDE.md — Survivor-tipy-2026
+# CLAUDE.md
 
-This file provides guidance for AI assistants working on this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
-**Survivor-tipy-2026** is a Progressive Web App (PWA) for managing betting predictions for the Czech TV show *Survivor 2026*. The entire application lives in a single HTML file (`index.html`) with embedded CSS and JavaScript — no build tools, no dependencies, no framework.
+**Survivor-tipy-2026** is a Progressive Web App (PWA) for managing betting predictions for the Czech TV show *Survivor 2026*. The entire application lives in a single HTML file (`index.html`, ~1612 lines) with embedded CSS and JavaScript — no build tools, no dependencies, no framework.
 
 **Language:** Czech (all UI text is in Czech; use UTF-8 and diacritical marks correctly)
 
-## Repository Structure
-
-```
-Survivor-tipy-2026/
-├── index.html    # Complete application (HTML + CSS + JS, ~1600 lines)
-└── CLAUDE.md     # This file
-```
-
-There is no `package.json`, no build step, and no test runner. Deployment is simply hosting `index.html` as a static file.
+There is no `package.json`, no build step, and no test runner. Deployment is simply hosting `index.html` as a static file. There are no build commands.
 
 ## Technology Stack
 
@@ -30,15 +22,15 @@ There is no `package.json`, no build step, and no test runner. Deployment is sim
 
 ## Key Constants and Configuration
 
-These values are defined near the top of the `<script>` block in `index.html`:
+Defined near the top of the `<script>` block (~line 422):
 
 | Constant | Value | Purpose |
 |---|---|---|
 | `ADMIN_PASSWORD` | `survivor2026admin` | Admin panel access |
-| `WINNER_DEADLINE` | Feb 20 2026 23:59 | Deadline for basic winner pick |
+| `WINNER_DEADLINE` | Feb 23 2026 20:00 | Deadline for basic winner pick |
 | `BONUS_OPEN_DATE` | Feb 27 2026 00:00 | Date bonus betting unlocks |
 
-**Firebase project:** `survivor-tipy` (config embedded in JS around line 412).
+**Firebase project:** `survivor-tipy` (config embedded in JS at line 413).
 
 ## Application Features
 
@@ -54,23 +46,25 @@ These values are defined near the top of the `<script>` block in `index.html`:
    - 1 point per correct guess, max 2 per week
 
 3. **Bonus — 1000 Kč entry**
-   - Rank 5 contestants who go furthest (bonusFar) and 5 eliminated first (bonusOut)
+   - Rank 5 contestants who go furthest (`bonusFar`) and 5 eliminated first (`bonusOut`)
    - Scoring: exact position = 20 pts; correct contestant, wrong position = 10 pts
    - Unlocks on `BONUS_OPEN_DATE`
 
 ### Admin Panel
 
-Password-protected (`survivor2026admin`). Admin actions:
+Password-protected. Admin actions:
 - Mark contestants as eliminated (sets elimination order)
 - Create weekly rounds with tribe names, nominees, and deadline
-- Enter weekly elimination results
+- Enter weekly elimination results (stored as `results[]` array per week)
 - Toggle bonus betting open/closed
 
 ### Contestants
 
-24 total across two categories:
-- **Celebs (7):** Trabo, Adam, Vendy, Doki, Ondřej, Žofie, Johana
-- **Civilians (17):** Tereza, Nela, Matěj, Bára, Jura, Ján, Simona, Eva, Sára, Lukáš, Bety, Iki, Viviane, Leoš, Otakar, Stanislav, Denisa
+24 total, split into two tribes. Each entry has `id`, `name`, `desc`, `emoji`, and `tribe` fields:
+- **Tribe `hrdinove` (Hrdinové):** Trabo, Vendy, Doki, Ondřej, Tereza, Nela, Matěj, Bára, Jura, Sára, Lukáš, Bety
+- **Tribe `padousi` (Padouši):** Adam, Žofie, Johana, Ján, Simona, Eva, Iki, Viviane, Leoš, Otakar, Stanislav, Denisa
+
+Helper functions: `getAllC()` returns all 24, `findById(id)` looks up a single contestant.
 
 ## Firestore Data Model
 
@@ -85,9 +79,49 @@ picks/{userId}
 
 game/state
   eliminated: [{ id, order }]
-  weeks: [{ id, name, tribe1, tribe2, nominees1[], nominees2[], deadline, result1, result2, open }]
+  weeks: [{ id, name, tribe1, tribe2, nominees1[], nominees2[], deadline, results[], closed, open }]
   bonusOpen: boolean
 ```
+
+## JavaScript Architecture
+
+### Global State (~line 469)
+
+```js
+let currentUser = null;  // Firebase Auth user
+let isAdmin = false;
+let myData = {};         // current user's picks doc
+let gameState = {};      // game/state doc (eliminated, weeks, bonusOpen)
+let allPicks = {};       // all users' picks (for leaderboard)
+let unsubPicks = null;   // Firestore onSnapshot unsubscribe fn
+let unsubGame = null;
+```
+
+Picker UI state: `pickerMode` (`'winner'|'weekly'|'bonus-far'|'bonus-out'`), `pickerSlot`, `pickerSelected`.
+
+### Key Helpers (~line 485)
+
+```js
+const $ = id => document.getElementById(id);  // shorthand used everywhere
+const fakeEmail = n => /* normalizes nickname */ + '@survivor.vsazky';
+```
+
+Auth uses Firebase email/password with fake email addresses derived from nicknames — users never see or enter an email address.
+
+### Data Flow
+
+- Firestore `onSnapshot` on `picks/` and `game/state` drives all UI re-renders
+- `initApp()` sets up listeners after login; `calcScore(data)` (~line 1188) computes per-user scoring
+- `renderLeaderboard()` (~line 1262) ranks all users by score
+
+### Conventions
+
+- **No framework** — plain DOM manipulation with `querySelector` / `querySelectorAll`
+- **No modules** — all code in a single inline `<script type="module">` tag
+- **Naming:** camelCase for variables/functions; kebab-case for CSS classes and HTML IDs
+- **Class prefixes:** `btn-`, `tribe-`, `week-`, `admin-`, `pick-`
+- **localStorage** used only for PWA install-banner dismissal; all game state lives in Firestore
+- **No transactions** — Firestore writes are not atomic; avoid concurrent admin operations
 
 ## CSS Design System
 
@@ -113,63 +147,20 @@ game/state
 - Safe-area insets (`env(safe-area-inset-*)`) for notched devices
 - Glassmorphism via `backdrop-filter: blur()`
 
-## JavaScript Conventions
-
-- **No framework** — plain DOM manipulation with `querySelector` / `querySelectorAll`
-- **No modules** — all code in a single inline `<script>` tag
-- **Real-time data** — Firestore `onSnapshot` listeners re-render on every change
-- **Naming:** camelCase for variables/functions; kebab-case for CSS classes and HTML IDs
-- **Class prefixes:** `btn-`, `tribe-`, `week-`, `admin-`, `pick-`
-- **State storage:** `localStorage` used only for PWA install-banner dismissal; all game state lives in Firestore
-- **Auth:** Firebase Auth (email/password); nickname stored in Firestore, not in the auth profile
-
-## Development Workflow
-
-### Making Changes
-
-1. Edit `index.html` directly — there is no compile or transpile step.
-2. Open `index.html` in a browser (or via a local server) to test immediately.
-3. Firebase credentials are embedded; the live Firebase project is used even in local development.
-
-### No Build Commands
-
-There are no `npm`, `yarn`, `make`, or other build commands. The file is served as-is.
-
-### Testing
-
-There is no automated test suite. Verify changes manually in a browser. Test:
-- User registration and login flow
-- Each betting tab (Základní, Týdenní, Bonus)
-- Admin panel actions (mark eliminated, create week, set results)
-- Responsive layout at mobile widths
-- PWA install banner behavior
-
 ## Common Tasks
 
 ### Add or rename a contestant
 
-Search for the `contestants` array (near line 432) and update the `id`, `name`, and `type` fields. IDs are used as Firestore keys, so changing an existing ID will orphan stored picks.
+Search for the `CONTESTANTS` object (~line 433) and update `id`, `name`, `desc`, `emoji`, and `tribe`. IDs are Firestore keys — changing an existing ID orphans stored picks.
 
 ### Change a deadline
 
-Update `WINNER_DEADLINE` or `BONUS_OPEN_DATE` constants. Both are `Date` objects constructed inline.
-
-### Add a new weekly round
-
-Done at runtime via the Admin Panel. No code change required.
+Update `WINNER_DEADLINE` or `BONUS_OPEN_DATE` (~line 423). Both are `Date` objects; deadlines are in local Czech time.
 
 ### Adjust scoring
 
-See the leaderboard calculation block around lines 1182–1251. Weekly hits and bonus position scoring are both computed there.
+See `calcScore()` (~line 1188). Weekly hits and bonus position scoring are both computed there.
 
-### Update Firebase config
+### Single file orientation
 
-Replace the `firebaseConfig` object (~line 412) with new credentials. Never commit production credentials to a public repository.
-
-## Important Warnings
-
-- **Sensitive data in source:** The Firebase API key and admin password are hardcoded in `index.html`. For a public repo, move secrets to environment variables or a server-side layer.
-- **Single file:** All HTML, CSS, and JS are in one file. Keep related sections together and use the existing comment delimiters to orient yourself.
-- **Czech text:** UI strings must use correct Czech diacritics. Double-check any auto-generated text.
-- **Date arithmetic:** Deadlines are in local time (Czech timezone expected). Be careful when comparing `Date` objects.
-- **No transactions:** Firestore writes are not atomic. Avoid concurrent admin operations that could leave state inconsistent.
+Use the `/* ═══ SECTION ═══ */` comment banners to navigate between logical sections (AUTH, STATE, HELPERS, SCORING, LEADERBOARD, etc.).
