@@ -318,10 +318,10 @@ input[type="datetime-local"]:focus{border-color:var(--gold)}
     </div>
 
     <div style="margin-top:32px" id="winner-grid-area">
-      <div class="tribe-label tribe-a">🌴 Známé tváře</div>
-      <div class="contestants-grid" id="grid-celebs-basic"></div>
-      <div class="tribe-label tribe-b">🧑 Ostatní soutěžící</div>
-      <div class="contestants-grid" id="grid-civilian-basic"></div>
+      <div class="tribe-label tribe-a">🏆 Hrdinové</div>
+      <div class="contestants-grid" id="grid-hrdinove-basic"></div>
+      <div class="tribe-label tribe-b">💀 Padouši</div>
+      <div class="contestants-grid" id="grid-padousi-basic"></div>
     </div>
   </div>
 
@@ -431,32 +431,32 @@ const db   = getFirestore(app);
 ═══════════════════════════════════════════════ */
 const CONTESTANTS = {
   celebs: [
-    {id:'trabo',   name:'Trabo',   desc:'Michal Trabalík, 31 — reality star',    emoji:'⭐'},
-    {id:'adam',    name:'Adam',    desc:'Adam Chlpík, 39 — rapper',              emoji:'🎤'},
-    {id:'vendy',   name:'Vendy',   desc:'Vendula Wronka Fialová, 38 — herečka',  emoji:'🎭'},
-    {id:'doki',    name:'Doki',    desc:'Jan Dokládal, 26 — moderátor',          emoji:'📻'},
-    {id:'ondrej',  name:'Ondřej',  desc:'Ondřej Kubina, 28 — herec',             emoji:'🎬'},
-    {id:'zofie',   name:'Žofie',   desc:'Žofie Dařbujánová, 31 — zpěvačka',     emoji:'🎶'},
-    {id:'johana',  name:'Johana',  desc:'Johana Nováčková, 28 — herečka',        emoji:'🌟'},
+    {id:'trabo',   name:'Trabo',   desc:'Michal Trabalík, 31 — reality star',    emoji:'⭐', tribe:'hrdinove'},
+    {id:'adam',    name:'Adam',    desc:'Adam Chlpík, 39 — rapper',              emoji:'🎤', tribe:'padousi'},
+    {id:'vendy',   name:'Vendy',   desc:'Vendula Wronka Fialová, 38 — herečka',  emoji:'🎭', tribe:'hrdinove'},
+    {id:'doki',    name:'Doki',    desc:'Jan Dokládal, 26 — moderátor',          emoji:'📻', tribe:'hrdinove'},
+    {id:'ondrej',  name:'Ondřej',  desc:'Ondřej Kubina, 28 — herec',             emoji:'🎬', tribe:'hrdinove'},
+    {id:'zofie',   name:'Žofie',   desc:'Žofie Dařbujánová, 31 — zpěvačka',     emoji:'🎶', tribe:'padousi'},
+    {id:'johana',  name:'Johana',  desc:'Johana Nováčková, 28 — herečka',        emoji:'🌟', tribe:'hrdinove'},
   ],
   civilian: [
-    {id:'tereza',   name:'Tereza',   desc:'Tereza Svobodová, 29 — porodní asistentka', emoji:'👶'},
-    {id:'nela',     name:'Nela',     desc:'Nela Slivková, 30 — novinářka',              emoji:'📰'},
-    {id:'matej',    name:'Matěj',    desc:'Matěj Libecajt, 37 — key account manažer',  emoji:'💼'},
-    {id:'bara',     name:'Bára',     desc:'Bára Hošková, 26 — módní návrhářka',        emoji:'👗'},
-    {id:'jura',     name:'Jura',     desc:'Jiří Drtil, 30 — stavební inženýr',         emoji:'🏗️'},
-    {id:'jan',      name:'Ján',      desc:'Ján Palko, 35 — sous-chef',                 emoji:'👨‍🍳'},
-    {id:'simona',   name:'Simona',   desc:'Simona Kirchnerová, 28 — modelka',          emoji:'💎'},
-    {id:'eva',      name:'Eva',      desc:'Eva Tesařová, 20 — studentka',              emoji:'📚'},
-    {id:'sara',     name:'Sára',     desc:'Sára Trnková, 24 — IT konzultantka',        emoji:'💻'},
-    {id:'lukas',    name:'Lukáš',    desc:'Lukáš Švec, 28 — policista',               emoji:'👮'},
-    {id:'bety',     name:'Bety',     desc:'Alžběta Levínská, 25 — basketbalistka',    emoji:'🏀'},
-    {id:'iki',      name:'Iki',      desc:'Iki Ngatse, 25 — podcaster',               emoji:'🎙️'},
-    {id:'viviane',  name:'Viviane',  desc:'Viviane Kerstin, 25 — pilates instruktorka',emoji:'🧘'},
-    {id:'leos',     name:'Leoš',     desc:'Leoš Svoboda, 23 — stážista v jaderné el.',emoji:'⚛️'},
-    {id:'otakar',   name:'Otakar',   desc:'Otakar Šenkýř, 32 — designer',             emoji:'🎨'},
-    {id:'stanislav',name:'Stanislav',desc:'Stanislav Štěpánek, 28 — AI architekt',    emoji:'🤖'},
-    {id:'denisa',   name:'Denisa',   desc:'Denisa Ryndová, 25 — parkurová jezdkyně',  emoji:'🐎'},
+    {id:'tereza',   name:'Tereza',   desc:'Tereza Svobodová, 29 — porodní asistentka', emoji:'👶', tribe:'padousi'},
+    {id:'nela',     name:'Nela',     desc:'Nela Slivková, 30 — novinářka',              emoji:'📰', tribe:'hrdinove'},
+    {id:'matej',    name:'Matěj',    desc:'Matěj Libecajt, 37 — key account manažer',  emoji:'💼', tribe:'padousi'},
+    {id:'bara',     name:'Bára',     desc:'Bára Hošková, 26 — módní návrhářka',        emoji:'👗', tribe:'hrdinove'},
+    {id:'jura',     name:'Jura',     desc:'Jiří Drtil, 30 — stavební inženýr',         emoji:'🏗️', tribe:'hrdinove'},
+    {id:'jan',      name:'Ján',      desc:'Ján Palko, 35 — sous-chef',                 emoji:'👨‍🍳', tribe:'hrdinove'},
+    {id:'simona',   name:'Simona',   desc:'Simona Kirchnerová, 28 — modelka',          emoji:'💎', tribe:'padousi'},
+    {id:'eva',      name:'Eva',      desc:'Eva Tesařová, 20 — studentka',              emoji:'📚', tribe:'padousi'},
+    {id:'sara',     name:'Sára',     desc:'Sára Trnková, 24 — IT konzultantka',        emoji:'💻', tribe:'hrdinove'},
+    {id:'lukas',    name:'Lukáš',    desc:'Lukáš Švec, 28 — policista',               emoji:'👮', tribe:'hrdinove'},
+    {id:'bety',     name:'Bety',     desc:'Alžběta Levínská, 25 — basketbalistka',    emoji:'🏀', tribe:'hrdinove'},
+    {id:'iki',      name:'Iki',      desc:'Iki Ngatse, 25 — podcaster',               emoji:'🎙️', tribe:'padousi'},
+    {id:'viviane',  name:'Viviane',  desc:'Viviane Kerstin, 25 — pilates instruktorka',emoji:'🧘', tribe:'padousi'},
+    {id:'leos',     name:'Leoš',     desc:'Leoš Svoboda, 23 — stážista v jaderné el.',emoji:'⚛️', tribe:'padousi'},
+    {id:'otakar',   name:'Otakar',   desc:'Otakar Šenkýř, 32 — designer',             emoji:'🎨', tribe:'padousi'},
+    {id:'stanislav',name:'Stanislav',desc:'Stanislav Štěpánek, 28 — AI architekt',    emoji:'🤖', tribe:'padousi'},
+    {id:'denisa',   name:'Denisa',   desc:'Denisa Ryndová, 25 — parkurová jezdkyně',  emoji:'🐎', tribe:'padousi'},
   ]
 };
 const getAllC = () => [...CONTESTANTS.celebs, ...CONTESTANTS.civilian];
@@ -732,8 +732,8 @@ function renderBasic() {
   if(pickBtn) pickBtn.onclick = () => openPicker('winner');
 
   if(!locked) {
-    renderContestantGrid('grid-celebs-basic', CONTESTANTS.celebs, 'winner');
-    renderContestantGrid('grid-civilian-basic', CONTESTANTS.civilian, 'winner');
+    renderContestantGrid('grid-hrdinove-basic', getAllC().filter(c=>c.tribe==='hrdinove'), 'winner');
+    renderContestantGrid('grid-padousi-basic', getAllC().filter(c=>c.tribe==='padousi'), 'winner');
   }
 }
 
@@ -1146,8 +1146,8 @@ function renderPickerGrid() {
       }).join('')}</div>`;
   };
 
-  grid.innerHTML = renderGroup('🌴 Známé tváře','tribe-a',CONTESTANTS.celebs) +
-                   renderGroup('🧑 Ostatní','tribe-b',CONTESTANTS.civilian);
+  grid.innerHTML = renderGroup('🏆 Hrdinové','tribe-a', getAllC().filter(c=>c.tribe==='hrdinove')) +
+                   renderGroup('💀 Padouši','tribe-b', getAllC().filter(c=>c.tribe==='padousi'));
 
   grid.querySelectorAll('.contestant-card:not(.eliminated):not(.already-picked)').forEach(card=>{
     card.onclick = () => {
