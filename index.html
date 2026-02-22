@@ -306,7 +306,7 @@ input[type="datetime-local"]:focus{border-color:var(--gold)}
   <div class="tab-content active" id="tab-zakladni">
     <div class="price-tag price-basic">Základní tip · 100 Kč</div>
     <div class="section-title">Vítěz sezóny</div>
-    <p class="section-sub">Jednou si vyber soutěžícího, o kterém věříš, že vyhraje celou sezónu. <strong>Deadline: pátek 20. 2. 2026 ve 23:59.</strong></p>
+    <p class="section-sub">Jednou si vyber soutěžícího, o kterém věříš, že vyhraje celou sezónu. <strong>Deadline: pondělí 23. 2. 2026 ve 20:00.</strong></p>
 
     <div id="winner-deadline-banner"></div>
 
@@ -679,7 +679,7 @@ function renderBasic() {
     if(locked) {
       banner.innerHTML = `<div class="deadline-banner deadline-locked">
         <span style="font-size:1.5rem">🔒</span>
-        <span class="deadline-locked-msg">Tipování vítěze bylo uzavřeno 20. 2. 2026 ve 23:59</span>
+        <span class="deadline-locked-msg">Tipování vítěze bylo uzavřeno 23. 2. 2026 ve 20:00</span>
       </div>`;
     } else {
       banner.innerHTML = `<div class="deadline-banner deadline-open">
