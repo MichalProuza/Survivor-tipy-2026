@@ -124,6 +124,7 @@ input:focus{border-color:var(--gold)}
 .contestant-card.selected{background:rgba(244,165,34,.15);border-color:var(--gold)}
 .contestant-card.eliminated{opacity:.35;cursor:not-allowed;text-decoration:line-through}
 .contestant-card.already-picked{opacity:.5;cursor:not-allowed}
+.contestant-card.locked-card{cursor:default}
 .contestant-emoji-sm{font-size:1.6rem;display:block;margin-bottom:6px}
 .contestant-name-sm{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;color:var(--cream)}
 .contestant-desc-sm{font-size:.68rem;color:var(--muted);margin-top:3px;line-height:1.3}
@@ -724,17 +725,15 @@ function renderBasic() {
 
   // ── Grid ──
   const gridArea = $('winner-grid-area');
-  if(gridArea) gridArea.style.display = locked ? 'none' : 'block';
+  if(gridArea) gridArea.style.display = 'block';
 
   $('winner-box').classList.toggle('has-pick', !!myData.winner);
 
   const pickBtn = $('btn-pick-winner');
   if(pickBtn) pickBtn.onclick = () => openPicker('winner');
 
-  if(!locked) {
-    renderContestantGrid('grid-hrdinove-basic', getAllC().filter(c=>c.tribe==='hrdinove'), 'winner');
-    renderContestantGrid('grid-padousi-basic', getAllC().filter(c=>c.tribe==='padousi'), 'winner');
-  }
+  renderContestantGrid('grid-hrdinove-basic', getAllC().filter(c=>c.tribe==='hrdinove'), 'winner', locked);
+  renderContestantGrid('grid-padousi-basic', getAllC().filter(c=>c.tribe==='padousi'), 'winner', locked);
 }
 
 function startWinnerCountdown() {
@@ -761,7 +760,7 @@ function startWinnerCountdown() {
   winnerCountdownInterval = setInterval(tick, 1000);
 }
 
-function renderContestantGrid(containerId, list, mode) {
+function renderContestantGrid(containerId, list, mode, locked) {
   const el = $(containerId);
   if(!el) return;
   el.innerHTML = list.map(c => {
@@ -770,6 +769,7 @@ function renderContestantGrid(containerId, list, mode) {
     let cls = 'contestant-card';
     if(isSelected) cls+=' selected';
     if(elimInfo) cls+=' eliminated';
+    if(locked) cls+=' locked-card';
     return `<div class="${cls}" data-id="${c.id}">
       ${elimInfo?`<div class="elim-badge">#${elimInfo.order}</div>`:''}
       <span class="contestant-emoji-sm">${c.emoji}</span>
@@ -777,9 +777,11 @@ function renderContestantGrid(containerId, list, mode) {
       <div class="contestant-desc-sm">${c.desc}</div>
     </div>`;
   }).join('');
-  el.querySelectorAll('.contestant-card:not(.eliminated)').forEach(card => {
-    card.onclick = () => { quickPickWinner(card.dataset.id); };
-  });
+  if(!locked) {
+    el.querySelectorAll('.contestant-card:not(.eliminated)').forEach(card => {
+      card.onclick = () => { quickPickWinner(card.dataset.id); };
+    });
+  }
 }
 
 async function quickPickWinner(id) {
@@ -833,7 +835,7 @@ function renderWeekly() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
         <div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">
-            ${openWeek.tribeA ? '🟡 ' + tribeALabel : '🟡 Tip č. 1'}
+            🏆 Hrdinové
           </div>
           <div class="weekly-pick-slot ${myWeekPick.pick1?'filled':''}" id="slot-pick1" data-slot="pick1">
             ${myWeekPick.pick1 ? (() => { const c=findById(myWeekPick.pick1); return `<span style="font-size:1.4rem">${c.emoji}</span> <strong>${c.name}</strong> <button class="slot-remove" data-clear="pick1" style="margin-left:auto">✕</button>`;})() : '<span style="color:rgba(255,255,255,.25);font-family:\'Barlow Condensed\',sans-serif">Klikni pro výběr…</span>'}
@@ -841,10 +843,10 @@ function renderWeekly() {
         </div>
         <div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--water);margin-bottom:10px">
-            ${openWeek.tribeB ? '🔵 ' + tribeBLabel : '🔵 Tip č. 2'}
+            💀 Padouši
           </div>
           <div class="weekly-pick-slot ${myWeekPick.pick2?'filled blue':''}" id="slot-pick2" data-slot="pick2">
-            ${myWeekPick.pick2 ? (() => { const c=findById(myWeekPick.pick2); return `<span style="font-size:1.4rem">${c.emoji}</span> <strong>${c.name}</strong> <button class="slot-remove" data-clear="pick2" style="margin-left:auto">✕</button>`;})() : '<span style="color:rgba(255,255,255,.25);font-family:\'Barlow Condensed\',sans-serif">Klikni pro výběr…</span>'}
+            ${myWeekPick.pick2 ? (() => { const c=findById(myWeekPick.pick2); return `<span style="font-size:1.4rem">${c.emoji}</span> <strong>${c.name}</strong> <button class="slot-remove" data-clear="pick2" style="margin-left:auto">✕</button>`;})() : '<span style="color:rgba(255,255,255,.25);font-family:\'Barlow Condensed\',sans-serif'>Klikni pro výběr…</span>'}
           </div>
         </div>
       </div>
@@ -913,40 +915,44 @@ function renderWeeklyContestantGrid(openWeek, myWeekPick) {
   const active = getAllC().filter(c => !gameState.eliminated?.some(e=>e.id===c.id));
   const nominees = openWeek.nominees || [];
 
-  // If admin set nominees, show only them; otherwise show all
-  const showList = nominees.length ? active.filter(c=>nominees.includes(c.id)) : active;
+  // Split active contestants by tribe; if nominees set, restrict to them
+  const base = nominees.length ? active.filter(c=>nominees.includes(c.id)) : active;
+  const hrdinove = base.filter(c=>c.tribe==='hrdinove');
+  const padousi  = base.filter(c=>c.tribe==='padousi');
+
+  const renderTribeCards = (list, slot) => list.map(c => {
+    const isPicked = myWeekPick[slot]===c.id;
+    let cls = 'contestant-card';
+    if(isPicked) cls += slot==='pick1' ? ' selected' : ' selected selected-blue';
+    return `<div class="${cls}" data-id="${c.id}" data-slot="${slot}">
+      ${isPicked?`<div class="pick-badge winner" style="background:${slot==='pick1'?'var(--gold)':'var(--water)'};color:white">${slot==='pick1'?'H':'P'}</div>`:''}
+      <span class="contestant-emoji-sm">${c.emoji}</span>
+      <div class="contestant-name-sm">${c.name}</div>
+      <div class="contestant-desc-sm">${c.desc}</div>
+    </div>`;
+  }).join('');
 
   grid.innerHTML = `
-    <p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">${nominees.length ? 'Nominovaní soutěžící:' : 'Všichni aktivní soutěžící (kmeny budou upřesněny):'}</p>
-    <div class="contestants-grid">
-      ${showList.map(c => {
-        const isPick1 = myWeekPick.pick1===c.id;
-        const isPick2 = myWeekPick.pick2===c.id;
-        let cls = 'contestant-card';
-        if(isPick1) cls += ' selected';
-        if(isPick2) cls += ' selected selected-blue';
-        return `<div class="${cls}" data-id="${c.id}">
-          ${isPick1?'<div class="pick-badge winner" style="background:var(--gold)">1</div>':''}
-          ${isPick2?'<div class="pick-badge winner" style="background:var(--water);color:white">2</div>':''}
-          <span class="contestant-emoji-sm">${c.emoji}</span>
-          <div class="contestant-name-sm">${c.name}</div>
-          <div class="contestant-desc-sm">${c.desc}</div>
-        </div>`;
-      }).join('')}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div class="tribe-label tribe-a" style="margin-top:0;margin-bottom:8px">🏆 Hrdinové</div>
+        <div class="contestants-grid">${renderTribeCards(hrdinove,'pick1')}</div>
+      </div>
+      <div>
+        <div class="tribe-label tribe-b" style="margin-top:0;margin-bottom:8px">💀 Padouši</div>
+        <div class="contestants-grid">${renderTribeCards(padousi,'pick2')}</div>
+      </div>
     </div>`;
 
   grid.querySelectorAll('.contestant-card').forEach(card => {
     card.onclick = () => {
-      const id = card.dataset.id;
+      const id   = card.dataset.id;
+      const slot = card.dataset.slot; // 'pick1' or 'pick2'
       myData.weekly = myData.weekly||{};
       myData.weekly[openWeek.id] = myData.weekly[openWeek.id]||{pick1:null,pick2:null};
       const wp = myData.weekly[openWeek.id];
-      // Cycle: if pick1 → set pick2, if pick2 → clear, if neither → set pick1 (or pick2 if pick1 full)
-      if(wp.pick1===id) { wp.pick1=null; }
-      else if(wp.pick2===id) { wp.pick2=null; }
-      else if(!wp.pick1) { wp.pick1=id; }
-      else if(!wp.pick2) { wp.pick2=id; }
-      else { wp.pick1=id; } // replace pick1
+      // Toggle: click same → deselect, click other → replace
+      wp[slot] = (wp[slot]===id) ? null : id;
       renderWeekly();
     };
   });
