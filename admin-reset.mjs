@@ -2,8 +2,8 @@
  * admin-reset.mjs
  *
  * 1. Smaže týdenní tipy (pole `weekly`) u všech uživatelů v kolekci `picks`
- * 2. Zavře všechna aktuálně otevřená týdenní kola v `game/state`
- * 3. Otevře nové kolo č. (N+1) s deadlinem 23. 2. 2026 20:00 (lokální čas CZ)
+ * 2. Nahradí všechna kola v `game/state` jediným novým kolem č. 1
+ *    s deadlinem 23. 2. 2026 20:00
  *
  * Spuštění: node admin-reset.mjs
  */
@@ -49,7 +49,7 @@ async function main() {
   }
   console.log(`\n✅ Smazáno týdenních tipů u ${cleared} uživatelů\n`);
 
-  // ── 2. Zavřít otevřená kola + přidat nové kolo ────────────────────────────
+  // ── 2. Reset kol — smaž vše, vytvoř jediné kolo č. 1 ─────────────────────
   console.log('📋 Načítám game/state…');
   const stateRef  = doc(db, 'game', 'state');
   const stateSnap = await getDoc(stateRef);
@@ -60,27 +60,20 @@ async function main() {
   }
 
   const state = stateSnap.data();
-  const weeks = state.weeks || [];
+  const oldWeeks = state.weeks || [];
+  console.log(`   Mažu ${oldWeeks.length} stávajících kol`);
 
-  // Zavřít všechna otevřená kola
-  const updatedWeeks = weeks.map(w => w.closed ? w : { ...w, closed: true });
-  const openCount = weeks.filter(w => !w.closed).length;
-  console.log(`   Zavírám ${openCount} otevřených kol`);
-
-  // Nové kolo: deadline 23. 2. 2026 20:00 (datetime-local formát)
-  const newDeadline = '2026-02-23T20:00';
   const newWeek = {
     id:      'w' + Date.now(),
-    weekNum: updatedWeeks.length + 1,
-    label:   '23.2.',
-    deadline: newDeadline,
+    weekNum: 1,
+    label:   '1. kolo',
+    deadline: '2026-02-23T20:00',
     closed:  false,
     results: [],
   };
-  updatedWeeks.push(newWeek);
 
-  await setDoc(stateRef, { ...state, weeks: updatedWeeks });
-  console.log(`✅ Otevřeno nové kolo č. ${newWeek.weekNum} s deadlinem ${newDeadline}`);
+  await setDoc(stateRef, { ...state, weeks: [newWeek] });
+  console.log(`✅ Vytvořeno kolo č. 1 s deadlinem 2026-02-23T20:00`);
 }
 
 main().catch(err => {
