@@ -789,14 +789,6 @@ async function quickPickWinner(id) {
   await saveMyData();
   flash('winner-save-ok');
   renderBasic();
-  // Email notifikace
-  try {
-    const c = findById(id);
-    await emailjs.send("service_bhx3iro", EMAILJS_WINNER_TEMPLATE, {
-      nickname: nick(currentUser),
-      winner: c ? `${c.emoji} ${c.name} (${c.desc})` : id,
-    });
-  } catch(e) { console.warn('EmailJS chyba:', e); }
 }
 
 /* ═══════════════════════════════════════════════
@@ -963,8 +955,6 @@ function openWeeklyPicker(weekId, slotName, currentPick) {
   const grid = $('weekly-contestant-grid');
   if(grid) grid.scrollIntoView({behavior:'smooth', block:'start'});
 }
-
-const EMAILJS_WINNER_TEMPLATE = "template_kw99y0v"; // doplň po vytvoření šablony
 
 async function sendWeeklyNotification(weekId, pick1id, pick2id) {
   try {
