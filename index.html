@@ -1057,11 +1057,12 @@ function renderBonus() {
   const rankCls    = ['gold','silver','bronze','',''];
 
   const renderSlots = (arr, prefix, title, subtitle) => {
+    const labels = prefix==='out' ? ['2.','3.','4.','5.','6.'] : rankLabels;
+    const classes = prefix==='out' ? ['','','','',''] : rankCls;
     const slots = arr.map((id,i) => {
       const c = id?findById(id):null;
-      const isFirstOutSlot = prefix==='out';
-      return `<div class="bonus-slot${c?' filled':''}${isFirstOutSlot?' first-out-slot':''}" data-prefix="${prefix}" data-slot="${i}">
-        <div class="slot-num ${rankCls[i]}">${rankLabels[i]}</div>
+      return `<div class="bonus-slot${c?' filled':''}" data-prefix="${prefix}" data-slot="${i}">
+        <div class="slot-num ${classes[i]}">${labels[i]}</div>
         ${c ? `<div class="slot-filled-inner">
             <span class="slot-emoji">${c.emoji}</span>
             <div><div class="slot-name">${c.name}</div><div class="slot-desc">${c.desc}</div></div>
@@ -1076,7 +1077,7 @@ function renderBonus() {
   };
 
   area.innerHTML = renderSlots(far,'far','🏆 Top 5 — dojdou nejdál','Seřaď od 1. místa (vítěz) do 5. místa. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
-    renderSlots(out,'out','💀 Top 5 — vypadnou jako první','Seřaď od 1. (první vyřazený) do 5. místa. Stejný bodový systém.') +
+    renderSlots(out,'out','💀 2.–6. vyřazený','Tipuj, kdo vypadne jako druhý až šestý. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
     `<button class="btn-save-big" id="btn-save-bonus">💾 Uložit bonusový tip</button>
      <span class="save-ok" id="bonus-save-ok">✓ Uloženo!</span>`;
 
@@ -1108,7 +1109,7 @@ function renderBonus() {
 ═══════════════════════════════════════════════ */
 function openPicker(mode, slot=null) {
   pickerMode=mode; pickerSlot=slot; pickerSelected=null;
-  const titles = {winner:'Vyber vítěze sezóny','bonus-far':'Vyber soutěžícího — nejdál','bonus-out':'Vyber soutěžícího — první ven', weekly:'Vyber soutěžícího'};
+  const titles = {winner:'Vyber vítěze sezóny','bonus-far':'Vyber soutěžícího — nejdál','bonus-out':'Vyber soutěžícího — 2.–6. vyřazený', weekly:'Vyber soutěžícího'};
   $('picker-title').textContent = titles[mode]||'Vyber soutěžícího';
   $('picker-confirm').style.display='none';
   renderPickerGrid();
@@ -1231,7 +1232,7 @@ function calcScore(data) {
   let bonusOutScore=0;
   (data.bonusOut||[]).forEach((id,i)=>{
     if(!id) return;
-    const top5out = getAllC().map(c=>({id:c.id,rank:getRankOut(c.id)})).filter(x=>x.rank<999).sort((a,b)=>a.rank-b.rank).slice(0,5).map(x=>x.id);
+    const top5out = getAllC().map(c=>({id:c.id,rank:getRankOut(c.id)})).filter(x=>x.rank<999).sort((a,b)=>a.rank-b.rank).slice(1,6).map(x=>x.id);
     if(top5out.includes(id)) {
       if(top5out[i]===id) bonusOutScore+=20;
       else bonusOutScore+=10;
@@ -1501,14 +1502,18 @@ function renderAdmin() {
       await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
     };
   });
-  // Set result
+  // Set result + auto-add to eliminated
   area.querySelectorAll('[data-set-result]').forEach(btn=>{
     btn.onclick = async () => {
       const wid=btn.dataset.setResult;
       const r1=$(`result1-${wid}`)?.value;
       if(!r1) return alert('Vyber vyřazeného soutěžícího!');
       const newWeeks=(gameState.weeks||[]).map(w=>w.id===wid?{...w,results:[r1]}:w);
-      await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
+      const curElim = gameState.eliminated||[];
+      const newElim = curElim.some(e=>e.id===r1)
+        ? curElim
+        : [...curElim, {id:r1, order:curElim.length+1}];
+      await setDoc(doc(db,'game','state'),{...gameState, weeks:newWeeks, eliminated:newElim});
     };
   });
   // Toggle bonus
