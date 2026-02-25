@@ -330,7 +330,7 @@ input[type="datetime-local"]:focus{border-color:var(--gold)}
   <div class="tab-content" id="tab-tydeni">
     <div class="price-tag price-basic">Týdenní tip · zdarma</div>
     <div class="section-title">Kdo vypadne tento týden?</div>
-    <p class="section-sub">Každý týden tipuj <strong>dva soutěžící</strong>, kteří budou vyřazeni — jednoho za každý kmen. Stačí trefit jméno, nezáleží na pořadí.</p>
+    <p class="section-sub">Každý týden tipuj <strong>dva soutěžící</strong> — jednoho za každý kmen. V každém kole vypadne <strong>jen jeden</strong> z nich; 1 bod za správný tip.</p>
 
     <div id="weekly-tip-area"></div>
     <div class="week-results" id="weekly-results-area"></div>
@@ -999,26 +999,25 @@ function renderWeekResult(w) {
     return hits;
   };
 
-  const totalHit2 = picks.filter(p=>countHits(p)===2).length;
-  const totalHit1 = picks.filter(p=>countHits(p)===1).length;
+  const totalHit1 = picks.filter(p=>countHits(p)>=1).length;
 
   return `<div class="week-round">
     <div class="week-round-header">
       <div class="week-round-title">Kolo ${w.weekNum} <span style="font-weight:400;color:var(--muted);font-size:.85rem">${w.label||''}</span></div>
       <div class="week-round-meta">
         ${resultCs.length ? resultCs.map(c=>`${c.emoji} ${c.name}`).join(', ') : 'Výsledek čeká'}
-        ${resultCs.length ? `&nbsp;·&nbsp; ${totalHit2}× oba správně, ${totalHit1}× jeden správně` : ''}
+        ${resultCs.length ? `&nbsp;·&nbsp; ${totalHit1}× správně` : ''}
       </div>
     </div>
     <div class="week-round-body">
-      ${resultCs.length ? `<p style="margin-bottom:10px;font-size:.85rem">Vyřazeni: <strong>${resultCs.map(c=>`${c.emoji} ${c.name}`).join(' & ')}</strong></p>` : '<p style="color:var(--muted);font-size:.85rem;margin-bottom:10px">Výsledek ještě nebyl zadán.</p>'}
+      ${resultCs.length ? `<p style="margin-bottom:10px;font-size:.85rem">Vyřazen: <strong>${resultCs.map(c=>`${c.emoji} ${c.name}`).join(', ')}</strong></p>` : '<p style="color:var(--muted);font-size:.85rem;margin-bottom:10px">Výsledek ještě nebyl zadán.</p>'}
       <div class="picks-row">
         ${picks.map(p => {
           const hits = countHits(p);
-          const cls = !results.length ? 'pending' : hits===2 ? 'hit' : hits===1 ? 'pending' : 'miss';
+          const cls = !results.length ? 'pending' : hits>=1 ? 'hit' : 'miss';
           const c1=p.pick1?findById(p.pick1):null;
           const c2=p.pick2?findById(p.pick2):null;
-          const hitMark = !results.length ? '' : hits===2 ? ' ✓✓' : hits===1 ? ' ✓' : ' ✗';
+          const hitMark = !results.length ? '' : hits>=1 ? ' ✓' : ' ✗';
           return `<span class="pick-pill ${cls}">
             ${c1?c1.emoji:''} ${c1?c1.name:'?'} & ${c2?c2.emoji:''} ${c2?c2.name:'?'}${hitMark}
             <em style="font-weight:400;opacity:.7"> — ${p.nick}</em>
@@ -1058,11 +1057,12 @@ function renderBonus() {
   const rankCls    = ['gold','silver','bronze','',''];
 
   const renderSlots = (arr, prefix, title, subtitle) => {
+    const labels = prefix==='out' ? ['2.','3.','4.','5.','6.'] : rankLabels;
+    const classes = prefix==='out' ? ['','','','',''] : rankCls;
     const slots = arr.map((id,i) => {
       const c = id?findById(id):null;
-      const isFirstOutSlot = prefix==='out';
-      return `<div class="bonus-slot${c?' filled':''}${isFirstOutSlot?' first-out-slot':''}" data-prefix="${prefix}" data-slot="${i}">
-        <div class="slot-num ${rankCls[i]}">${rankLabels[i]}</div>
+      return `<div class="bonus-slot${c?' filled':''}" data-prefix="${prefix}" data-slot="${i}">
+        <div class="slot-num ${classes[i]}">${labels[i]}</div>
         ${c ? `<div class="slot-filled-inner">
             <span class="slot-emoji">${c.emoji}</span>
             <div><div class="slot-name">${c.name}</div><div class="slot-desc">${c.desc}</div></div>
@@ -1077,7 +1077,7 @@ function renderBonus() {
   };
 
   area.innerHTML = renderSlots(far,'far','🏆 Top 5 — dojdou nejdál','Seřaď od 1. místa (vítěz) do 5. místa. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
-    renderSlots(out,'out','💀 Top 5 — vypadnou jako první','Seřaď od 1. (první vyřazený) do 5. místa. Stejný bodový systém.') +
+    renderSlots(out,'out','💀 2.–6. vyřazený','Tipuj, kdo vypadne jako druhý až šestý. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
     `<button class="btn-save-big" id="btn-save-bonus">💾 Uložit bonusový tip</button>
      <span class="save-ok" id="bonus-save-ok">✓ Uloženo!</span>`;
 
@@ -1109,7 +1109,7 @@ function renderBonus() {
 ═══════════════════════════════════════════════ */
 function openPicker(mode, slot=null) {
   pickerMode=mode; pickerSlot=slot; pickerSelected=null;
-  const titles = {winner:'Vyber vítěze sezóny','bonus-far':'Vyber soutěžícího — nejdál','bonus-out':'Vyber soutěžícího — první ven', weekly:'Vyber soutěžícího'};
+  const titles = {winner:'Vyber vítěze sezóny','bonus-far':'Vyber soutěžícího — nejdál','bonus-out':'Vyber soutěžícího — 2.–6. vyřazený', weekly:'Vyber soutěžícího'};
   $('picker-title').textContent = titles[mode]||'Vyber soutěžícího';
   $('picker-confirm').style.display='none';
   renderPickerGrid();
@@ -1185,11 +1185,11 @@ function calcScore(data) {
   breakdown.winnerCorrect = false;
   // (we'll show who they picked; actual winner unknown until end)
 
-  // Weekly tips: count hits (2 picks per week, 2 results per week)
+  // Weekly tips: count hits (2 picks per week, 1 result per week)
   let weekHits=0, weekTotal=0;
   weeks.filter(w=>w.closed&&w.results?.length).forEach(w=>{
     const results = w.results||[];
-    weekTotal+=2;
+    weekTotal+=1;
     const pick1 = data.weekly?.[w.id]?.pick1 || null;
     const pick2 = data.weekly?.[w.id]?.pick2 || null;
     if(pick1 && results.includes(pick1)) weekHits++;
@@ -1232,7 +1232,7 @@ function calcScore(data) {
   let bonusOutScore=0;
   (data.bonusOut||[]).forEach((id,i)=>{
     if(!id) return;
-    const top5out = getAllC().map(c=>({id:c.id,rank:getRankOut(c.id)})).filter(x=>x.rank<999).sort((a,b)=>a.rank-b.rank).slice(0,5).map(x=>x.id);
+    const top5out = getAllC().map(c=>({id:c.id,rank:getRankOut(c.id)})).filter(x=>x.rank<999).sort((a,b)=>a.rank-b.rank).slice(1,6).map(x=>x.id);
     if(top5out.includes(id)) {
       if(top5out[i]===id) bonusOutScore+=20;
       else bonusOutScore+=10;
@@ -1421,7 +1421,7 @@ function renderAdmin() {
 
     <div class="admin-section">
       <h4>📅 Týdenní kola</h4>
-      <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Otevři nové kolo před epizodou. Každé kolo má <strong>dva výsledky</strong> — jeden za každý kmen.</p>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Otevři nové kolo před epizodou. V každém kole vypadne <strong>jeden soutěžící</strong>.</p>
       <div class="admin-row">
         <div>
           <label style="display:block;margin-bottom:4px">Popisek kola (např. "23.2.–1.3.")</label>
@@ -1436,19 +1436,17 @@ function renderAdmin() {
       <div class="week-list" id="admin-week-list">
         ${weeks.map(w=>{
           const rc1 = w.results?.[0] ? findById(w.results[0]) : null;
-          const rc2 = w.results?.[1] ? findById(w.results[1]) : null;
           const activeForResult = getAllC().filter(c=>!elim.some(e=>e.id===c.id));
           return `<div class="week-item">
             <div class="week-item-name">Kolo ${w.weekNum} ${w.label?`· ${w.label}`:''} ${w.closed?'✓ uzavřeno':'⏳ otevřeno'}</div>
             <div class="week-item-result">
-              ${rc1||rc2 ? `Vyřazeni: ${[rc1,rc2].filter(Boolean).map(c=>`${c.emoji} ${c.name}`).join(' & ')}` : 'bez výsledku'}
+              ${rc1 ? `Vyřazen: ${rc1.emoji} ${rc1.name}` : 'bez výsledku'}
             </div>
             ${!w.closed?`<button class="btn-admin danger" data-close-week="${w.id}">Uzavřít kolo</button>`:''}
-            ${w.closed && !(w.results?.length>=2) ? `
+            ${w.closed && !(w.results?.length>=1) ? `
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;width:100%">
-                <select id="result1-${w.id}"><option value="">1. vyřazený…</option>${activeForResult.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('')}</select>
-                <select id="result2-${w.id}"><option value="">2. vyřazený…</option>${activeForResult.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('')}</select>
-                <button class="btn-admin" data-set-result="${w.id}">Uložit výsledky</button>
+                <select id="result1-${w.id}"><option value="">vyřazený…</option>${activeForResult.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('')}</select>
+                <button class="btn-admin" data-set-result="${w.id}">Uložit výsledek</button>
               </div>`:''}
           </div>`;
         }).join('')}
@@ -1504,16 +1502,18 @@ function renderAdmin() {
       await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
     };
   });
-  // Set 2 results
+  // Set result + auto-add to eliminated
   area.querySelectorAll('[data-set-result]').forEach(btn=>{
     btn.onclick = async () => {
       const wid=btn.dataset.setResult;
       const r1=$(`result1-${wid}`)?.value;
-      const r2=$(`result2-${wid}`)?.value;
-      if(!r1||!r2) return alert('Vyber oba vyřazené soutěžící!');
-      if(r1===r2) return alert('Vyber dva různé soutěžící!');
-      const newWeeks=(gameState.weeks||[]).map(w=>w.id===wid?{...w,results:[r1,r2]}:w);
-      await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
+      if(!r1) return alert('Vyber vyřazeného soutěžícího!');
+      const newWeeks=(gameState.weeks||[]).map(w=>w.id===wid?{...w,results:[r1]}:w);
+      const curElim = gameState.eliminated||[];
+      const newElim = curElim.some(e=>e.id===r1)
+        ? curElim
+        : [...curElim, {id:r1, order:curElim.length+1}];
+      await setDoc(doc(db,'game','state'),{...gameState, weeks:newWeeks, eliminated:newElim});
     };
   });
   // Toggle bonus
