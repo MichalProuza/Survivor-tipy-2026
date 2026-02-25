@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Survivor-tipy-2026** is a Progressive Web App (PWA) for managing betting predictions for the Czech TV show *Survivor 2026*. The entire application lives in a single HTML file (`index.html`, ~1612 lines) with embedded CSS and JavaScript — no build tools, no dependencies, no framework.
+**Survivor-tipy-2026** is a Progressive Web App (PWA) for managing betting predictions for the Czech TV show *Survivor 2026*. The entire application lives in a single HTML file (`index.html`, ~1602 lines) with embedded CSS and JavaScript — no build tools, no dependencies, no framework.
 
 **Language:** Czech (all UI text is in Czech; use UTF-8 and diacritical marks correctly)
 
@@ -111,8 +111,8 @@ Auth uses Firebase email/password with fake email addresses derived from nicknam
 ### Data Flow
 
 - Firestore `onSnapshot` on `picks/` and `game/state` drives all UI re-renders
-- `initApp()` sets up listeners after login; `calcScore(data)` (~line 1188) computes per-user scoring
-- `renderLeaderboard()` (~line 1262) ranks all users by score
+- `initApp()` sets up listeners after login; `calcScore(data)` (~line 1178) computes per-user scoring
+- `renderLeaderboard()` (~line 1252) ranks all users by score
 
 ### Conventions
 
@@ -159,7 +159,7 @@ Update `WINNER_DEADLINE` or `BONUS_OPEN_DATE` (~line 423). Both are `Date` objec
 
 ### Adjust scoring
 
-See `calcScore()` (~line 1188). Weekly hits and bonus position scoring are both computed there.
+See `calcScore()` (~line 1178). Weekly hits and bonus position scoring are both computed there.
 
 ### Single file orientation
 
