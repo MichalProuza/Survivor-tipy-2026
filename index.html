@@ -341,7 +341,7 @@ input[type="datetime-local"]:focus{border-color:var(--gold)}
     <div class="price-tag price-bonus">Bonusový tip · 1000 Kč</div>
     <div class="section-title">Bonusové tipování</div>
     <p class="section-sub">Seřaď 5 soutěžících, kteří dojdou nejdál, a 5 kteří vypadnou jako první. <strong>Záleží i na přesném pořadí</strong> — přesná pozice = 20 bodů, správný hráč na jiné pozici = 10 bodů.</p>
-
+    <div id="bonus-deadline-banner"></div>
     <div id="bonus-area"></div>
   </div>
 
@@ -421,6 +421,7 @@ const firebaseConfig = {
 
 const ADMIN_PASSWORD = "survivor2026admin";
 const BONUS_OPEN_DATE = new Date("2026-02-27T00:00:00");
+const BONUS_DEADLINE  = new Date("2026-03-02T20:00:00");
 const WINNER_DEADLINE = new Date("2026-02-23T20:00:00");
 
 const app  = initializeApp(firebaseConfig);
@@ -1031,6 +1032,32 @@ function renderWeekResult(w) {
 /* ═══════════════════════════════════════════════
    TAB: BONUS
 ═══════════════════════════════════════════════ */
+let bonusCountdownInterval = null;
+
+function startBonusCountdown() {
+  if(bonusCountdownInterval) clearInterval(bonusCountdownInterval);
+  function tick() {
+    const el = $('bonus-countdown');
+    if(!el) { clearInterval(bonusCountdownInterval); return; }
+    const now = new Date();
+    const diff = BONUS_DEADLINE - now;
+    if(diff <= 0) {
+      clearInterval(bonusCountdownInterval);
+      renderBonus();
+      return;
+    }
+    const days  = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins  = Math.floor((diff % 3600000) / 60000);
+    const secs  = Math.floor((diff % 60000) / 1000);
+    el.textContent = days > 0
+      ? `${days}d ${String(hours).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m ${String(secs).padStart(2,'0')}s`
+      : `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  }
+  tick();
+  bonusCountdownInterval = setInterval(tick, 1000);
+}
+
 function renderBonus() {
   const area = $('bonus-area');
   const now = new Date();
@@ -1051,6 +1078,28 @@ function renderBonus() {
     return;
   }
 
+  const locked = now > BONUS_DEADLINE;
+
+  // Deadline banner
+  const banner = $('bonus-deadline-banner');
+  if(banner) {
+    if(locked) {
+      banner.innerHTML = `<div class="deadline-banner deadline-locked">
+        <span style="font-size:1.5rem">🔒</span>
+        <span class="deadline-locked-msg">Bonusové tipování bylo uzavřeno 2. 3. 2026 ve 20:00</span>
+      </div>`;
+    } else {
+      banner.innerHTML = `<div class="deadline-banner deadline-open">
+        <span style="font-size:1.3rem">⏳</span>
+        <div>
+          <div class="deadline-label" style="font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Zbývá do uzávěrky</div>
+          <div id="bonus-countdown" class="countdown-big" style="font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:.1em;color:var(--fire)"></div>
+        </div>
+      </div>`;
+      startBonusCountdown();
+    }
+  }
+
   const far  = myData.bonusFar  || Array(5).fill(null);
   const out  = myData.bonusOut  || Array(5).fill(null);
   const rankLabels = ['🥇','🥈','🥉','4.','5.'];
@@ -1066,9 +1115,9 @@ function renderBonus() {
         ${c ? `<div class="slot-filled-inner">
             <span class="slot-emoji">${c.emoji}</span>
             <div><div class="slot-name">${c.name}</div><div class="slot-desc">${c.desc}</div></div>
-            <button class="slot-remove" data-prefix="${prefix}" data-slot="${i}">✕</button>
+            ${!locked?`<button class="slot-remove" data-prefix="${prefix}" data-slot="${i}">✕</button>`:''}
           </div>`
-          : `<span class="slot-empty-txt">Klikni pro výběr…</span>`}
+          : `<span class="slot-empty-txt">${locked?'—':'Klikni pro výběr…'}</span>`}
       </div>`;
     }).join('');
     return `<h4 style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">${title}</h4>
@@ -1078,8 +1127,10 @@ function renderBonus() {
 
   area.innerHTML = renderSlots(far,'far','🏆 Top 5 — dojdou nejdál','Seřaď od 1. místa (vítěz) do 5. místa. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
     renderSlots(out,'out','💀 2.–6. vyřazený','Tipuj, kdo vypadne jako druhý až šestý. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
-    `<button class="btn-save-big" id="btn-save-bonus">💾 Uložit bonusový tip</button>
-     <span class="save-ok" id="bonus-save-ok">✓ Uloženo!</span>`;
+    (locked ? '' : `<button class="btn-save-big" id="btn-save-bonus">💾 Uložit bonusový tip</button>
+     <span class="save-ok" id="bonus-save-ok">✓ Uloženo!</span>`);
+
+  if(locked) return;
 
   // Slot clicks
   area.querySelectorAll('.bonus-slot').forEach(slot => {
@@ -1379,7 +1430,55 @@ function renderLeaderboard() {
       </div>`;
   }
 
-  area.innerHTML = mainTable + weeklyDetail;
+  // ── BONUS TIPY DETAIL ──────────────────────────────────
+  let bonusDetail = '';
+  const bonusEntries = entries.filter(e =>
+    (e.data.bonusFar && e.data.bonusFar.some(Boolean)) ||
+    (e.data.bonusOut && e.data.bonusOut.some(Boolean))
+  );
+  if(bonusEntries.length > 0) {
+    const farLabels = ['🥇','🥈','🥉','4.','5.'];
+    const outLabels = ['2.','3.','4.','5.','6.'];
+
+    const bonusRows = bonusEntries.map((e,i)=>{
+      const isMe = e.nick===myNick;
+      const farCells = (e.data.bonusFar||Array(5).fill(null)).map((id,j)=>{
+        const c = id?findById(id):null;
+        return c ? `<span style="display:block;font-size:.78rem;white-space:nowrap">${farLabels[j]} ${c.emoji} ${c.name}</span>` : `<span style="display:block;font-size:.78rem;color:var(--muted)">${farLabels[j]} —</span>`;
+      }).join('');
+      const outCells = (e.data.bonusOut||Array(5).fill(null)).map((id,j)=>{
+        const c = id?findById(id):null;
+        return c ? `<span style="display:block;font-size:.78rem;white-space:nowrap">${outLabels[j]} ${c.emoji} ${c.name}</span>` : `<span style="display:block;font-size:.78rem;color:var(--muted)">${outLabels[j]} —</span>`;
+      }).join('');
+      return `<tr ${isMe?'style="background:rgba(244,165,34,.06)"':''}>
+        <td><strong>${e.nick}</strong>${isMe?' <span style="color:var(--gold);font-size:.7rem">(ty)</span>':''}</td>
+        <td>${farCells}</td>
+        <td>${outCells}</td>
+        <td style="text-align:center">
+          <span class="chip chip-b">${e.score.bonusFarScore}b</span>
+          <span class="chip chip-fo">${e.score.bonusOutScore}b</span>
+        </td>
+      </tr>`;
+    }).join('');
+
+    bonusDetail = `
+      <h3 style="font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:.08em;color:var(--sand);margin:36px 0 12px">
+        🎯 Bonusové tipy — detail
+      </h3>
+      <div style="overflow-x:auto">
+        <table class="lb-table" style="min-width:500px">
+          <thead><tr>
+            <th>Hráč</th>
+            <th>🏆 Top 5 — nejdál</th>
+            <th>💀 2.–6. vyřazený</th>
+            <th style="text-align:center">Body</th>
+          </tr></thead>
+          <tbody>${bonusRows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  area.innerHTML = mainTable + weeklyDetail + bonusDetail;
 }
 
 /* ═══════════════════════════════════════════════
