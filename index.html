@@ -1249,16 +1249,14 @@ function calcScore(data) {
   breakdown.weekHits=weekHits;
   breakdown.weekTotal=weekTotal;
 
-  // Bonus FAR (who goes furthest — reverse order of elimination means last eliminated = furthest)
-  // eliminated array is ordered by elimination order (first eliminated = index 0)
-  // top 5 furthest = last 5 in elimination (or still in game)
+  // Bonus FAR (who goes furthest — last 5 remaining/eliminated)
+  // Can only be scored when ≤5 players remain (positions are definitive)
   const totalPlayers = getAllC().length;
   const elimOrder = elim.map(e=>e.id); // first out first
-  // rank for "how far" = reverse elimination order + still in game
   const getRankFar = (id) => {
     const elimIdx = elimOrder.indexOf(id);
-    if(elimIdx===-1) return totalPlayers; // still in game
-    return totalPlayers - elimIdx;
+    if(elimIdx===-1) return totalPlayers; // still in game = highest
+    return elimIdx + 1; // first out = 1 (lowest), last out = high
   };
   const getRankOut = (id) => {
     const elimIdx = elimOrder.indexOf(id);
@@ -1267,28 +1265,33 @@ function calcScore(data) {
   };
 
   let bonusFarScore=0;
-  (data.bonusFar||[]).forEach((id,i)=>{
-    if(!id) return;
-    const actualRank = getRankFar(id);
-    // Top 5 furthest by actual rank
+  if(elim.length >= totalPlayers - 5) {
+    // Enough eliminations — remaining ≤5 players are the definitive top 5
     const top5far = getAllC().map(c=>({id:c.id,rank:getRankFar(c.id)})).sort((a,b)=>b.rank-a.rank).slice(0,5).map(x=>x.id);
-    if(top5far.includes(id)) {
-      if(top5far[i]===id) bonusFarScore+=20; // exact position
-      else bonusFarScore+=10; // in top 5 but wrong position
-    }
-  });
+    (data.bonusFar||[]).forEach((id,i)=>{
+      if(!id) return;
+      if(top5far.includes(id)) {
+        if(top5far[i]===id) bonusFarScore+=20;
+        else bonusFarScore+=10;
+      }
+    });
+  }
   breakdown.bonusFarScore=bonusFarScore;
   score+=bonusFarScore;
 
   let bonusOutScore=0;
-  (data.bonusOut||[]).forEach((id,i)=>{
-    if(!id) return;
-    const top5out = getAllC().map(c=>({id:c.id,rank:getRankOut(c.id)})).filter(x=>x.rank<999).sort((a,b)=>a.rank-b.rank).slice(1,6).map(x=>x.id);
-    if(top5out.includes(id)) {
-      if(top5out[i]===id) bonusOutScore+=20;
-      else bonusOutScore+=10;
-    }
-  });
+  if(elim.length >= 2) {
+    // Progressive scoring — score as soon as 2nd eliminated is known
+    const knownOut = elimOrder.slice(1, Math.min(6, elimOrder.length)); // known positions 2–6
+    (data.bonusOut||[]).forEach((id,i)=>{
+      if(!id) return;
+      if(knownOut.includes(id)) {
+        // i=0 → 2nd elim (elimOrder[1]), i=1 → 3rd, etc.
+        if(elimOrder[i+1]===id) bonusOutScore+=20; // exact position
+        else bonusOutScore+=10; // right person, wrong position
+      }
+    });
+  }
   breakdown.bonusOutScore=bonusOutScore;
   score+=bonusOutScore;
 
