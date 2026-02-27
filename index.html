@@ -1295,6 +1295,7 @@ function calcScore(data) {
   breakdown.bonusOutScore=bonusOutScore;
   score+=bonusOutScore;
 
+  breakdown.bonusTotal=bonusFarScore+bonusOutScore;
   score+=weekHits; // 1 bod za kazdeho trefeneho
   breakdown.total=score;
   return breakdown;
@@ -1308,7 +1309,7 @@ function renderLeaderboard() {
   if(!area) return;
   const entries = Object.entries(allPicks).map(([uid,data])=>({
     uid, nick:data.nick||uid, data, score:calcScore(data)
-  })).sort((a,b)=>b.score.total-a.score.total);
+  })).sort((a,b)=>b.score.bonusTotal-a.score.bonusTotal);
 
   if(!entries.length){area.innerHTML='<p style="color:var(--muted)">Zatím žádné tipy.</p>';return;}
 
@@ -1345,7 +1346,7 @@ function renderLeaderboard() {
           <span style="color:var(--muted);font-size:.75rem"> / ${e.score.weekTotal} b</span>
         </td>
         <td><span class="chip chip-b">${e.score.bonusFarScore}b</span> <span class="chip chip-fo">${e.score.bonusOutScore}b</span></td>
-        <td><span class="score-big">${e.score.total}</span></td>
+        <td><span class="score-big">${e.score.bonusTotal}</span></td>
       </tr>`;
     }).join('')}</tbody>
   </table>`;
