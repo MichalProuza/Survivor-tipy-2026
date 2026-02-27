@@ -1280,14 +1280,15 @@ function calcScore(data) {
   score+=bonusFarScore;
 
   let bonusOutScore=0;
-  if(elim.length >= 6) {
-    // Enough eliminations to know positions 2–6
-    const top5out = elimOrder.slice(1,6); // 2nd–6th eliminated
+  if(elim.length >= 2) {
+    // Progressive scoring — score as soon as 2nd eliminated is known
+    const knownOut = elimOrder.slice(1, Math.min(6, elimOrder.length)); // known positions 2–6
     (data.bonusOut||[]).forEach((id,i)=>{
       if(!id) return;
-      if(top5out.includes(id)) {
-        if(top5out[i]===id) bonusOutScore+=20;
-        else bonusOutScore+=10;
+      if(knownOut.includes(id)) {
+        // i=0 → 2nd elim (elimOrder[1]), i=1 → 3rd, etc.
+        if(elimOrder[i+1]===id) bonusOutScore+=20; // exact position
+        else bonusOutScore+=10; // right person, wrong position
       }
     });
   }
