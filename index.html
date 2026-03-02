@@ -596,6 +596,7 @@ async function initApp() {
     allPicks={};
     snap.forEach(d => allPicks[d.id]=d.data());
     renderLeaderboard();
+    if(isAdmin) renderAdmin();
   });
 
   setLoading(false);
