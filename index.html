@@ -422,6 +422,7 @@ const firebaseConfig = {
 const ADMIN_PASSWORD = "survivor2026admin";
 const BONUS_OPEN_DATE = new Date("2026-02-27T00:00:00");
 const BONUS_DEADLINE  = new Date("2026-03-02T20:00:00");
+const BONUS_Q_DEADLINE = new Date("2026-03-09T20:00:00");
 const WINNER_DEADLINE = new Date("2026-02-23T20:00:00");
 
 const app  = initializeApp(firebaseConfig);
@@ -1138,23 +1139,32 @@ function renderBonus() {
       <div class="bonus-list">${slots}</div>`;
   };
 
-  // Bonus question: Johana II. vs Kristýna III.
+  // Bonus question: Johana II. vs Kristýna III. (own deadline)
   const bq = myData.bonusQuestion || null;
+  const lockedQ = now > BONUS_Q_DEADLINE;
   const johana2 = findById('johana2');
   const kristyna3 = findById('kristyna3');
+
+  const bqDeadlineInfo = lockedQ
+    ? `<div style="font-size:.75rem;color:var(--red);margin-bottom:10px">🔒 Uzávěrka 9. 3. 2026 ve 20:00 — uzavřeno</div>`
+    : `<div style="font-size:.75rem;color:var(--green);margin-bottom:10px">⏳ Uzávěrka: 9. 3. 2026 ve 20:00</div>`;
+
   const bonusQuestionHtml = `
     <h4 style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:28px 0 10px">❓ Bonusová otázka — 10 bodů</h4>
-    <p style="font-size:.85rem;color:var(--muted);margin-bottom:14px">Kdo z nově příchozích vypadne dřív?</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
-      <button class="bonus-q-btn${bq==='johana2'?' selected':''}" data-bq="johana2" ${locked?'disabled':''}
-        style="flex:1;min-width:140px;padding:14px 18px;border-radius:4px;border:2px solid ${bq==='johana2'?'var(--gold)':'rgba(255,255,255,.12)'};background:${bq==='johana2'?'rgba(244,165,34,.12)':'rgba(255,255,255,.04)'};cursor:${locked?'default':'pointer'};transition:all .2s;font-size:.95rem;color:var(--sand)">
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:8px">Kdo z nově příchozích vypadne dřív?</p>
+    ${bqDeadlineInfo}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="bonus-q-btn${bq==='johana2'?' selected':''}" data-bq="johana2" ${lockedQ?'disabled':''}
+        style="flex:1;min-width:140px;padding:14px 18px;border-radius:4px;border:2px solid ${bq==='johana2'?'var(--gold)':'rgba(255,255,255,.12)'};background:${bq==='johana2'?'rgba(244,165,34,.12)':'rgba(255,255,255,.04)'};cursor:${lockedQ?'default':'pointer'};transition:all .2s;font-size:.95rem;color:var(--sand)">
         ${johana2?johana2.emoji:''} ${johana2?johana2.name:'Johana II.'}
       </button>
-      <button class="bonus-q-btn${bq==='kristyna3'?' selected':''}" data-bq="kristyna3" ${locked?'disabled':''}
-        style="flex:1;min-width:140px;padding:14px 18px;border-radius:4px;border:2px solid ${bq==='kristyna3'?'var(--gold)':'rgba(255,255,255,.12)'};background:${bq==='kristyna3'?'rgba(244,165,34,.12)':'rgba(255,255,255,.04)'};cursor:${locked?'default':'pointer'};transition:all .2s;font-size:.95rem;color:var(--sand)">
+      <button class="bonus-q-btn${bq==='kristyna3'?' selected':''}" data-bq="kristyna3" ${lockedQ?'disabled':''}
+        style="flex:1;min-width:140px;padding:14px 18px;border-radius:4px;border:2px solid ${bq==='kristyna3'?'var(--gold)':'rgba(255,255,255,.12)'};background:${bq==='kristyna3'?'rgba(244,165,34,.12)':'rgba(255,255,255,.04)'};cursor:${lockedQ?'default':'pointer'};transition:all .2s;font-size:.95rem;color:var(--sand)">
         ${kristyna3?kristyna3.emoji:''} ${kristyna3?kristyna3.name:'Kristýna III.'}
       </button>
-    </div>`;
+    </div>
+    ${lockedQ ? '' : `<button class="btn-save-big" id="btn-save-bonus-q" style="margin-bottom:24px">💾 Uložit bonusovou otázku</button>
+     <span class="save-ok" id="bonus-q-save-ok">✓ Uloženo!</span>`}`;
 
   area.innerHTML = renderSlots(far,'far','🏆 Top 5 — dojdou nejdál','Seřaď od 1. místa (vítěz) do 5. místa. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
     renderSlots(out,'out','💀 2.–6. vyřazený','Tipuj, kdo vypadne jako druhý až šestý. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
@@ -1162,15 +1172,26 @@ function renderBonus() {
     (locked ? '' : `<button class="btn-save-big" id="btn-save-bonus">💾 Uložit bonusový tip</button>
      <span class="save-ok" id="bonus-save-ok">✓ Uloženo!</span>`);
 
-  if(locked) return;
+  // Bonus question clicks (independent deadline)
+  if(!lockedQ) {
+    area.querySelectorAll('.bonus-q-btn').forEach(btn => {
+      btn.onclick = () => {
+        myData.bonusQuestion = btn.dataset.bq;
+        renderBonus();
+      };
+    });
+    const btnSaveBQ = $('btn-save-bonus-q');
+    if(btnSaveBQ) {
+      btnSaveBQ.onclick = async () => {
+        btnSaveBQ.disabled=true; btnSaveBQ.textContent='⏳…';
+        await saveMyData();
+        btnSaveBQ.textContent='💾 Uložit bonusovou otázku'; btnSaveBQ.disabled=false;
+        flash('bonus-q-save-ok');
+      };
+    }
+  }
 
-  // Bonus question clicks
-  area.querySelectorAll('.bonus-q-btn').forEach(btn => {
-    btn.onclick = () => {
-      myData.bonusQuestion = btn.dataset.bq;
-      renderBonus();
-    };
-  });
+  if(locked) return;
 
   // Slot clicks
   area.querySelectorAll('.bonus-slot').forEach(slot => {
