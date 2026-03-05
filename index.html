@@ -567,6 +567,7 @@ async function initApp() {
   if(!myData.bonusFar) myData.bonusFar = Array(5).fill(null);
   if(!myData.bonusOut) myData.bonusOut = Array(5).fill(null);
   if(!myData.weekly)   myData.weekly = {};
+  if(!myData.bonusQuestion) myData.bonusQuestion = null;
 
   // subscribe game state
   unsubGame = onSnapshot(doc(db,'game','state'), async snap => {
@@ -1137,12 +1138,39 @@ function renderBonus() {
       <div class="bonus-list">${slots}</div>`;
   };
 
+  // Bonus question: Johana II. vs Kristýna III.
+  const bq = myData.bonusQuestion || null;
+  const johana2 = findById('johana2');
+  const kristyna3 = findById('kristyna3');
+  const bonusQuestionHtml = `
+    <h4 style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:28px 0 10px">❓ Bonusová otázka — 10 bodů</h4>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:14px">Kdo z nově příchozích vypadne dřív?</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
+      <button class="bonus-q-btn${bq==='johana2'?' selected':''}" data-bq="johana2" ${locked?'disabled':''}
+        style="flex:1;min-width:140px;padding:14px 18px;border-radius:4px;border:2px solid ${bq==='johana2'?'var(--gold)':'rgba(255,255,255,.12)'};background:${bq==='johana2'?'rgba(244,165,34,.12)':'rgba(255,255,255,.04)'};cursor:${locked?'default':'pointer'};transition:all .2s;font-size:.95rem;color:var(--sand)">
+        ${johana2?johana2.emoji:''} ${johana2?johana2.name:'Johana II.'}
+      </button>
+      <button class="bonus-q-btn${bq==='kristyna3'?' selected':''}" data-bq="kristyna3" ${locked?'disabled':''}
+        style="flex:1;min-width:140px;padding:14px 18px;border-radius:4px;border:2px solid ${bq==='kristyna3'?'var(--gold)':'rgba(255,255,255,.12)'};background:${bq==='kristyna3'?'rgba(244,165,34,.12)':'rgba(255,255,255,.04)'};cursor:${locked?'default':'pointer'};transition:all .2s;font-size:.95rem;color:var(--sand)">
+        ${kristyna3?kristyna3.emoji:''} ${kristyna3?kristyna3.name:'Kristýna III.'}
+      </button>
+    </div>`;
+
   area.innerHTML = renderSlots(far,'far','🏆 Top 5 — dojdou nejdál','Seřaď od 1. místa (vítěz) do 5. místa. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
     renderSlots(out,'out','💀 2.–6. vyřazený','Tipuj, kdo vypadne jako druhý až šestý. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
+    bonusQuestionHtml +
     (locked ? '' : `<button class="btn-save-big" id="btn-save-bonus">💾 Uložit bonusový tip</button>
      <span class="save-ok" id="bonus-save-ok">✓ Uloženo!</span>`);
 
   if(locked) return;
+
+  // Bonus question clicks
+  area.querySelectorAll('.bonus-q-btn').forEach(btn => {
+    btn.onclick = () => {
+      myData.bonusQuestion = btn.dataset.bq;
+      renderBonus();
+    };
+  });
 
   // Slot clicks
   area.querySelectorAll('.bonus-slot').forEach(slot => {
@@ -1307,7 +1335,24 @@ function calcScore(data) {
   breakdown.bonusOutScore=bonusOutScore;
   score+=bonusOutScore;
 
-  breakdown.bonusTotal=bonusFarScore+bonusOutScore;
+  // Bonus question: who of johana2/kristyna3 is eliminated first?
+  let bonusQScore=0;
+  if(data.bonusQuestion) {
+    const j2idx = elimOrder.indexOf('johana2');
+    const k3idx = elimOrder.indexOf('kristyna3');
+    // Score only when at least one of them is eliminated and the other is still in OR also eliminated
+    if(j2idx!==-1 || k3idx!==-1) {
+      let firstOut = null;
+      if(j2idx!==-1 && k3idx===-1) firstOut='johana2'; // johana2 eliminated, kristyna3 still in
+      else if(j2idx===-1 && k3idx!==-1) firstOut='kristyna3'; // kristyna3 eliminated, johana2 still in
+      else if(j2idx!==-1 && k3idx!==-1) firstOut = j2idx<k3idx ? 'johana2' : 'kristyna3'; // both eliminated
+      if(firstOut && data.bonusQuestion===firstOut) bonusQScore=10;
+    }
+  }
+  breakdown.bonusQScore=bonusQScore;
+  score+=bonusQScore;
+
+  breakdown.bonusTotal=bonusFarScore+bonusOutScore+bonusQScore;
   score+=weekHits; // 1 bod za kazdeho trefeneho
   breakdown.total=score;
   return breakdown;
@@ -1357,7 +1402,7 @@ function renderLeaderboard() {
           <span style="font-family:'Bebas Neue',cursive;font-size:1.2rem;color:${e.score.weekHits>0?'var(--green)':'var(--muted)'}">${e.score.weekHits}</span>
           <span style="color:var(--muted);font-size:.75rem"> / ${e.score.weekTotal} b</span>
         </td>
-        <td><span class="chip chip-b">${e.score.bonusFarScore}b</span> <span class="chip chip-fo">${e.score.bonusOutScore}b</span></td>
+        <td><span class="chip chip-b">${e.score.bonusFarScore}b</span> <span class="chip chip-fo">${e.score.bonusOutScore}b</span> <span class="chip" style="background:rgba(244,165,34,.12);color:var(--gold);border:1px solid rgba(244,165,34,.25)">${e.score.bonusQScore}b</span></td>
         <td><span class="score-big">${e.score.bonusTotal}</span></td>
       </tr>`;
     }).join('')}</tbody>
@@ -1450,7 +1495,8 @@ function renderLeaderboard() {
   let bonusDetail = '';
   const bonusEntries = entries.filter(e =>
     (e.data.bonusFar && e.data.bonusFar.some(Boolean)) ||
-    (e.data.bonusOut && e.data.bonusOut.some(Boolean))
+    (e.data.bonusOut && e.data.bonusOut.some(Boolean)) ||
+    e.data.bonusQuestion
   );
   if(bonusEntries.length > 0) {
     const farLabels = ['🥇','🥈','🥉','4.','5.'];
@@ -1466,13 +1512,16 @@ function renderLeaderboard() {
         const c = id?findById(id):null;
         return c ? `<span style="display:block;font-size:.78rem;white-space:nowrap">${outLabels[j]} ${c.emoji} ${c.name}</span>` : `<span style="display:block;font-size:.78rem;color:var(--muted)">${outLabels[j]} —</span>`;
       }).join('');
+      const bqPick = e.data.bonusQuestion ? findById(e.data.bonusQuestion) : null;
       return `<tr ${isMe?'style="background:rgba(244,165,34,.06)"':''}>
         <td><strong>${e.nick}</strong>${isMe?' <span style="color:var(--gold);font-size:.7rem">(ty)</span>':''}</td>
         <td>${farCells}</td>
         <td>${outCells}</td>
+        <td style="text-align:center">${bqPick ? `<span style="font-size:.85rem">${bqPick.emoji} ${bqPick.name}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
         <td style="text-align:center">
           <span class="chip chip-b">${e.score.bonusFarScore}b</span>
           <span class="chip chip-fo">${e.score.bonusOutScore}b</span>
+          <span class="chip" style="background:rgba(244,165,34,.12);color:var(--gold);border:1px solid rgba(244,165,34,.25)">${e.score.bonusQScore}b</span>
         </td>
       </tr>`;
     }).join('');
@@ -1487,6 +1536,7 @@ function renderLeaderboard() {
             <th>Hráč</th>
             <th>🏆 Top 5 — nejdál</th>
             <th>💀 2.–6. vyřazený</th>
+            <th style="text-align:center">❓ Otázka</th>
             <th style="text-align:center">Body</th>
           </tr></thead>
           <tbody>${bonusRows}</tbody>
