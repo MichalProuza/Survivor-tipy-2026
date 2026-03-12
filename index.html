@@ -423,6 +423,7 @@ const ADMIN_PASSWORD = "survivor2026admin";
 const BONUS_OPEN_DATE = new Date("2026-02-27T00:00:00");
 const BONUS_DEADLINE  = new Date("2026-03-02T20:00:00");
 const BONUS_Q_DEADLINE = new Date("2026-03-09T20:00:00");
+const BONUS_Q2_DEADLINE = new Date("2026-03-16T20:00:00");
 const WINNER_DEADLINE = new Date("2026-02-23T20:00:00");
 
 const app  = initializeApp(firebaseConfig);
@@ -569,6 +570,7 @@ async function initApp() {
   if(!myData.bonusOut) myData.bonusOut = Array(5).fill(null);
   if(!myData.weekly)   myData.weekly = {};
   if(!myData.bonusQuestion) myData.bonusQuestion = null;
+  if(!myData.bonusQuestion2) myData.bonusQuestion2 = null;
 
   // subscribe game state
   unsubGame = onSnapshot(doc(db,'game','state'), async snap => {
@@ -1166,9 +1168,35 @@ function renderBonus() {
     ${lockedQ ? '' : `<button class="btn-save-big" id="btn-save-bonus-q" style="margin-bottom:24px">💾 Uložit bonusovou otázku</button>
      <span class="save-ok" id="bonus-q-save-ok">✓ Uloženo!</span>`}`;
 
+  // Bonus question 2: Johana II. tribe
+  const bq2 = myData.bonusQuestion2 || null;
+  const lockedQ2 = now > BONUS_Q2_DEADLINE;
+
+  const bq2DeadlineInfo = lockedQ2
+    ? `<div style="font-size:.75rem;color:var(--red);margin-bottom:10px">🔒 Uzávěrka 16. 3. 2026 ve 20:00 — uzavřeno</div>`
+    : `<div style="font-size:.75rem;color:var(--green);margin-bottom:10px">⏳ Uzávěrka: 16. 3. 2026 ve 20:00</div>`;
+
+  const bonusQuestion2Html = `
+    <h4 style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:28px 0 10px">❓ Bonusová otázka 2 — 10 bodů</h4>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:8px">Vrátí se Johana II. zpátky do kmene Hrdinů nebo zůstane u Padouchů?</p>
+    ${bq2DeadlineInfo}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="bonus-q2-btn${bq2==='vrati'?' selected':''}" data-bq2="vrati" ${lockedQ2?'disabled':''}
+        style="flex:1;min-width:140px;padding:14px 18px;border-radius:4px;border:2px solid ${bq2==='vrati'?'var(--gold)':'rgba(255,255,255,.12)'};background:${bq2==='vrati'?'rgba(244,165,34,.12)':'rgba(255,255,255,.04)'};cursor:${lockedQ2?'default':'pointer'};transition:all .2s;font-size:.95rem;color:var(--sand)">
+        🔄 Vrátí se
+      </button>
+      <button class="bonus-q2-btn${bq2==='zustane'?' selected':''}" data-bq2="zustane" ${lockedQ2?'disabled':''}
+        style="flex:1;min-width:140px;padding:14px 18px;border-radius:4px;border:2px solid ${bq2==='zustane'?'var(--gold)':'rgba(255,255,255,.12)'};background:${bq2==='zustane'?'rgba(244,165,34,.12)':'rgba(255,255,255,.04)'};cursor:${lockedQ2?'default':'pointer'};transition:all .2s;font-size:.95rem;color:var(--sand)">
+        ✋ Zůstane
+      </button>
+    </div>
+    ${lockedQ2 ? '' : `<button class="btn-save-big" id="btn-save-bonus-q2" style="margin-bottom:24px">💾 Uložit bonusovou otázku 2</button>
+     <span class="save-ok" id="bonus-q2-save-ok">✓ Uloženo!</span>`}`;
+
   area.innerHTML = renderSlots(far,'far','🏆 Top 5 — dojdou nejdál','Seřaď od 1. místa (vítěz) do 5. místa. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
     renderSlots(out,'out','💀 2.–6. vyřazený','Tipuj, kdo vypadne jako druhý až šestý. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
     bonusQuestionHtml +
+    bonusQuestion2Html +
     (locked ? '' : `<button class="btn-save-big" id="btn-save-bonus">💾 Uložit bonusový tip</button>
      <span class="save-ok" id="bonus-save-ok">✓ Uloženo!</span>`);
 
@@ -1187,6 +1215,25 @@ function renderBonus() {
         await saveMyData();
         btnSaveBQ.textContent='💾 Uložit bonusovou otázku'; btnSaveBQ.disabled=false;
         flash('bonus-q-save-ok');
+      };
+    }
+  }
+
+  // Bonus question 2 clicks (independent deadline)
+  if(!lockedQ2) {
+    area.querySelectorAll('.bonus-q2-btn').forEach(btn => {
+      btn.onclick = () => {
+        myData.bonusQuestion2 = btn.dataset.bq2;
+        renderBonus();
+      };
+    });
+    const btnSaveBQ2 = $('btn-save-bonus-q2');
+    if(btnSaveBQ2) {
+      btnSaveBQ2.onclick = async () => {
+        btnSaveBQ2.disabled=true; btnSaveBQ2.textContent='⏳…';
+        await saveMyData();
+        btnSaveBQ2.textContent='💾 Uložit bonusovou otázku 2'; btnSaveBQ2.disabled=false;
+        flash('bonus-q2-save-ok');
       };
     }
   }
@@ -1373,7 +1420,15 @@ function calcScore(data) {
   breakdown.bonusQScore=bonusQScore;
   score+=bonusQScore;
 
-  breakdown.bonusTotal=bonusFarScore+bonusOutScore+bonusQScore;
+  // Bonus question 2: Johana II. tribe (vrati/zustane)
+  let bonusQ2Score=0;
+  if(data.bonusQuestion2 && gameState.bonusQ2Answer) {
+    if(data.bonusQuestion2 === gameState.bonusQ2Answer) bonusQ2Score=10;
+  }
+  breakdown.bonusQ2Score=bonusQ2Score;
+  score+=bonusQ2Score;
+
+  breakdown.bonusTotal=bonusFarScore+bonusOutScore+bonusQScore+bonusQ2Score;
   score+=weekHits; // 1 bod za kazdeho trefeneho
   breakdown.total=score;
   return breakdown;
@@ -1517,7 +1572,8 @@ function renderLeaderboard() {
   const bonusEntries = entries.filter(e =>
     (e.data.bonusFar && e.data.bonusFar.some(Boolean)) ||
     (e.data.bonusOut && e.data.bonusOut.some(Boolean)) ||
-    e.data.bonusQuestion
+    e.data.bonusQuestion ||
+    e.data.bonusQuestion2
   );
   if(bonusEntries.length > 0) {
     const farLabels = ['🥇','🥈','🥉','4.','5.'];
@@ -1534,15 +1590,19 @@ function renderLeaderboard() {
         return c ? `<span style="display:block;font-size:.78rem;white-space:nowrap">${outLabels[j]} ${c.emoji} ${c.name}</span>` : `<span style="display:block;font-size:.78rem;color:var(--muted)">${outLabels[j]} —</span>`;
       }).join('');
       const bqPick = e.data.bonusQuestion ? findById(e.data.bonusQuestion) : null;
+      const bq2Pick = e.data.bonusQuestion2;
+      const bq2Label = bq2Pick==='vrati' ? '🔄 Vrátí se' : bq2Pick==='zustane' ? '✋ Zůstane' : null;
       return `<tr ${isMe?'style="background:rgba(244,165,34,.06)"':''}>
         <td><strong>${e.nick}</strong>${isMe?' <span style="color:var(--gold);font-size:.7rem">(ty)</span>':''}</td>
         <td>${farCells}</td>
         <td>${outCells}</td>
         <td style="text-align:center">${bqPick ? `<span style="font-size:.85rem">${bqPick.emoji} ${bqPick.name}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+        <td style="text-align:center">${bq2Label ? `<span style="font-size:.85rem">${bq2Label}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
         <td style="text-align:center">
           <span class="chip chip-b">${e.score.bonusFarScore}b</span>
           <span class="chip chip-fo">${e.score.bonusOutScore}b</span>
-          <span class="chip" style="background:rgba(244,165,34,.12);color:var(--gold);border:1px solid rgba(244,165,34,.25)">${e.score.bonusQScore}b</span>
+          <span class="chip" style="background:rgba(244,165,34,.12);color:var(--gold);border:1px solid rgba(244,165,34,.25)">${e.score.bonusQScore||0}b</span>
+          <span class="chip" style="background:rgba(244,165,34,.12);color:var(--gold);border:1px solid rgba(244,165,34,.25)">${e.score.bonusQ2Score||0}b</span>
         </td>
       </tr>`;
     }).join('');
@@ -1557,7 +1617,8 @@ function renderLeaderboard() {
             <th>Hráč</th>
             <th>🏆 Top 5 — nejdál</th>
             <th>💀 2.–6. vyřazený</th>
-            <th style="text-align:center">❓ Otázka</th>
+            <th style="text-align:center">❓ Otázka 1</th>
+            <th style="text-align:center">❓ Otázka 2</th>
             <th style="text-align:center">Body</th>
           </tr></thead>
           <tbody>${bonusRows}</tbody>
@@ -1656,6 +1717,17 @@ function renderAdmin() {
     </div>
 
     <div class="admin-section">
+      <h4>❓ Bonusová otázka 2 — správná odpověď</h4>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Vrátí se Johana II. zpátky do kmene Hrdinů? Nastav správnou odpověď pro vyhodnocení.</p>
+      <div class="admin-row" style="gap:8px">
+        <span style="font-size:.85rem;color:var(--muted)">Aktuální: <strong style="color:var(--sand)">${gameState.bonusQ2Answer==='vrati'?'🔄 Vrátí se':gameState.bonusQ2Answer==='zustane'?'✋ Zůstane':'⏳ nenastaveno'}</strong></span>
+        <button class="btn-admin success" id="btn-bq2-vrati">🔄 Vrátí se</button>
+        <button class="btn-admin danger" id="btn-bq2-zustane">✋ Zůstane</button>
+        ${gameState.bonusQ2Answer ? `<button class="btn-admin" id="btn-bq2-clear">✕ Zrušit</button>` : ''}
+      </div>
+    </div>
+
+    <div class="admin-section">
       <h4>⏰ Prodloužení bonusu pro hráče</h4>
       <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Nastav individuální deadline pro konkrétního hráče (přepíše globální uzávěrku).</p>
       ${Object.entries(allPicks).sort(([,a],[,b])=>a.nick.localeCompare(b.nick)).map(([uid,data])=>{
@@ -1738,6 +1810,20 @@ function renderAdmin() {
   // Toggle bonus
   $('btn-toggle-bonus').onclick = async () => {
     await setDoc(doc(db,'game','state'),{...gameState,bonusOpen:!gameState.bonusOpen});
+  };
+  // Bonus question 2 answer
+  const btnBq2Vrati = $('btn-bq2-vrati');
+  if(btnBq2Vrati) btnBq2Vrati.onclick = async () => {
+    await setDoc(doc(db,'game','state'),{...gameState,bonusQ2Answer:'vrati'});
+  };
+  const btnBq2Zustane = $('btn-bq2-zustane');
+  if(btnBq2Zustane) btnBq2Zustane.onclick = async () => {
+    await setDoc(doc(db,'game','state'),{...gameState,bonusQ2Answer:'zustane'});
+  };
+  const btnBq2Clear = $('btn-bq2-clear');
+  if(btnBq2Clear) btnBq2Clear.onclick = async () => {
+    const {bonusQ2Answer, ...rest} = gameState;
+    await setDoc(doc(db,'game','state'),{...rest,bonusQ2Answer:null});
   };
   // Per-user bonus extension
   area.querySelectorAll('[data-set-ext]').forEach(btn => {
