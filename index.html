@@ -1629,11 +1629,11 @@ function renderAdmin() {
             <div class="week-item-result">
               ${rc1 ? `Vyřazen: ${rc1.emoji} ${rc1.name}` : 'bez výsledku'}
             </div>
-            ${!w.closed?`<button class="btn-admin danger" data-close-week="${w.id}">Uzavřít kolo</button>`:''}
-            ${w.closed?`
+            ${!w.closed?`
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;width:100%">
-                <input type="datetime-local" id="reopen-dl-${w.id}" style="font-size:.85rem">
-                <button class="btn-admin success" data-reopen-week="${w.id}">🔓 Znovu otevřít</button>
+                <input type="datetime-local" id="edit-dl-${w.id}" value="${w.deadline||''}" style="font-size:.85rem">
+                <button class="btn-admin" data-edit-deadline="${w.id}">Změnit deadline</button>
+                <button class="btn-admin danger" data-close-week="${w.id}">Uzavřít kolo</button>
               </div>`:''}
             ${w.closed && !(w.results?.length>=1) ? `
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;width:100%">
@@ -1703,21 +1703,21 @@ function renderAdmin() {
     }];
     await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
   };
+  // Edit deadline of open week
+  area.querySelectorAll('[data-edit-deadline]').forEach(btn=>{
+    btn.onclick = async () => {
+      const wid=btn.dataset.editDeadline;
+      const newDl=$(`edit-dl-${wid}`)?.value;
+      if(!newDl) return alert('Nastav nový deadline!');
+      const newWeeks=(gameState.weeks||[]).map(w=>w.id===wid?{...w,deadline:newDl}:w);
+      await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
+    };
+  });
   // Close week
   area.querySelectorAll('[data-close-week]').forEach(btn=>{
     btn.onclick = async () => {
       const wid=btn.dataset.closeWeek;
       const newWeeks=(gameState.weeks||[]).map(w=>w.id===wid?{...w,closed:true}:w);
-      await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
-    };
-  });
-  // Reopen week
-  area.querySelectorAll('[data-reopen-week]').forEach(btn=>{
-    btn.onclick = async () => {
-      const wid=btn.dataset.reopenWeek;
-      const newDeadline=$(`reopen-dl-${wid}`)?.value;
-      if(!newDeadline) return alert('Nastav nový deadline!');
-      const newWeeks=(gameState.weeks||[]).map(w=>w.id===wid?{...w,closed:false,deadline:newDeadline,results:[]}:w);
       await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
     };
   });
