@@ -1630,6 +1630,11 @@ function renderAdmin() {
               ${rc1 ? `Vyřazen: ${rc1.emoji} ${rc1.name}` : 'bez výsledku'}
             </div>
             ${!w.closed?`<button class="btn-admin danger" data-close-week="${w.id}">Uzavřít kolo</button>`:''}
+            ${w.closed?`
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;width:100%">
+                <input type="datetime-local" id="reopen-dl-${w.id}" style="font-size:.85rem">
+                <button class="btn-admin success" data-reopen-week="${w.id}">🔓 Znovu otevřít</button>
+              </div>`:''}
             ${w.closed && !(w.results?.length>=1) ? `
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;width:100%">
                 <select id="result1-${w.id}"><option value="">vyřazený…</option>${activeForResult.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('')}</select>
@@ -1703,6 +1708,16 @@ function renderAdmin() {
     btn.onclick = async () => {
       const wid=btn.dataset.closeWeek;
       const newWeeks=(gameState.weeks||[]).map(w=>w.id===wid?{...w,closed:true}:w);
+      await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
+    };
+  });
+  // Reopen week
+  area.querySelectorAll('[data-reopen-week]').forEach(btn=>{
+    btn.onclick = async () => {
+      const wid=btn.dataset.reopenWeek;
+      const newDeadline=$(`reopen-dl-${wid}`)?.value;
+      if(!newDeadline) return alert('Nastav nový deadline!');
+      const newWeeks=(gameState.weeks||[]).map(w=>w.id===wid?{...w,closed:false,deadline:newDeadline,results:[]}:w);
       await setDoc(doc(db,'game','state'),{...gameState,weeks:newWeeks});
     };
   });
