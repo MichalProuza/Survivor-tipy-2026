@@ -1629,14 +1629,11 @@ function renderAdmin() {
             <div class="week-item-result">
               ${rc1 ? `Vyřazen: ${rc1.emoji} ${rc1.name}` : 'bez výsledku'}
             </div>
-            ${!w.closed?`
-              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;width:100%">
-                <label style="font-size:.8rem;color:var(--muted)">Deadline:</label>
+            ${!w.closed?`<button class="btn-admin danger" data-close-week="${w.id}">Uzavřít kolo</button>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px;width:100%;border-top:1px solid rgba(255,255,255,.06);padding-top:8px">
+                <span style="font-size:.8rem;color:var(--muted)">Deadline:</span>
                 <input type="datetime-local" id="edit-dl-${w.id}" value="${w.deadline||''}" style="font-size:.85rem;background:rgba(255,255,255,.08);color:var(--cream);border:1px solid rgba(255,255,255,.15);border-radius:3px;padding:6px 8px">
                 <button class="btn-admin success" data-edit-deadline="${w.id}">Změnit deadline</button>
-              </div>
-              <div style="margin-top:6px">
-                <button class="btn-admin danger" data-close-week="${w.id}">Uzavřít kolo</button>
               </div>`:''}
             ${w.closed && !(w.results?.length>=1) ? `
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;width:100%">
