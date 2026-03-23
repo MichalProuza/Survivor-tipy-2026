@@ -445,7 +445,7 @@ const CONTESTANTS = {
   ],
   civilian: [
     {id:'tereza',   name:'Tereza',   desc:'Tereza Svobodová, 29 — porodní asistentka', emoji:'👶', tribe:'hrdinove'},
-    {id:'nela',     name:'Nela',     desc:'Nela Slivková, 30 — novinářka',              emoji:'📰', tribe:'hrdinove'},
+    {id:'nela',     name:'Nela',     desc:'Nela Slivková, 30 — novinářka',              emoji:'📰', tribe:'padousi'},
     {id:'matej',    name:'Matěj',    desc:'Matěj Libecajt, 37 — key account manažer',  emoji:'💼', tribe:'hrdinove'},
     {id:'bara',     name:'Bára',     desc:'Bára Hošková, 26 — módní návrhářka',        emoji:'👗', tribe:'hrdinove'},
     {id:'jura',     name:'Jura',     desc:'Jiří Drtil, 30 — stavební inženýr',         emoji:'🏗️', tribe:'hrdinove'},
@@ -456,10 +456,10 @@ const CONTESTANTS = {
     {id:'lukas',    name:'Lukáš',    desc:'Lukáš Švec, 28 — policista',               emoji:'👮', tribe:'hrdinove'},
     {id:'bety',     name:'Bety',     desc:'Alžběta Levínská, 25 — basketbalistka',    emoji:'🏀', tribe:'hrdinove'},
     {id:'iki',      name:'Iki',      desc:'Iki Ngatse, 25 — podcaster',               emoji:'🎙️', tribe:'padousi'},
-    {id:'viviane',  name:'Viviane',  desc:'Viviane Kerstin, 25 — pilates instruktorka',emoji:'🧘', tribe:'padousi'},
-    {id:'leos',     name:'Leoš',     desc:'Leoš Svoboda, 23 — stážista v jaderné el.',emoji:'⚛️', tribe:'padousi'},
+    {id:'viviane',  name:'Viviane',  desc:'Viviane Kerstin, 25 — pilates instruktorka',emoji:'🧘', tribe:'hrdinove'},
+    {id:'leos',     name:'Leoš',     desc:'Leoš Svoboda, 23 — stážista v jaderné el.',emoji:'⚛️', tribe:'hrdinove'},
     {id:'otakar',   name:'Otakar',   desc:'Otakar Šenkýř, 32 — designer',             emoji:'🎨', tribe:'padousi'},
-    {id:'stanislav',name:'Stanislav',desc:'Stanislav Štěpánek, 28 — AI architekt',    emoji:'🤖', tribe:'padousi'},
+    {id:'stanislav',name:'Stanislav',desc:'Stanislav Štěpánek, 28 — AI architekt',    emoji:'🤖', tribe:'hrdinove'},
     {id:'denisa',   name:'Denisa',   desc:'Denisa Ryndová, 25 — parkurová jezdkyně',  emoji:'🐎', tribe:'padousi'},
     {id:'johana2',  name:'Johana II.', desc:'Johana (II. série) — kandidátka',           emoji:'🌟', tribe:'padousi'},
     {id:'kristyna3',name:'Kristýna III.',desc:'Kristýna (III. série) — kandidátka',      emoji:'✨', tribe:'padousi'},
@@ -1707,6 +1707,18 @@ function renderAdmin() {
     </div>
 
     <div class="admin-section">
+      <h4>🔄 Reset posledního kola</h4>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Smaže tipy všech hráčů v posledním kole, znovu ho otevře a nastaví nový deadline (použij po změně kmenů).</p>
+      <div class="admin-row">
+        <div>
+          <label style="display:block;margin-bottom:4px">Nový deadline:</label>
+          <input type="datetime-local" id="admin-reset-week-deadline" value="2026-03-24T20:00">
+        </div>
+        <button class="btn-admin danger" id="btn-reset-last-week">🔄 Resetovat poslední kolo</button>
+      </div>
+    </div>
+
+    <div class="admin-section">
       <h4>🎯 Bonusové tipování</h4>
       <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Bonusové tipování se automaticky otevře 27.2.2026. Lze také otevřít/zavřít ručně.</p>
       <div class="admin-row">
@@ -1807,6 +1819,26 @@ function renderAdmin() {
       await setDoc(doc(db,'game','state'),{...gameState, weeks:newWeeks, eliminated:newElim});
     };
   });
+  // Reset last week picks for all users
+  $('btn-reset-last-week').onclick = async () => {
+    const weeks = gameState.weeks || [];
+    if(!weeks.length) return alert('Žádné kolo nenalezeno!');
+    const newDl = $('admin-reset-week-deadline').value;
+    if(!newDl) return alert('Nastav nový deadline!');
+    if(!confirm(`Opravdu chceš smazat tipy všech hráčů pro poslední kolo a nastavit deadline na ${newDl}?`)) return;
+    const lastWeek = weeks[weeks.length - 1];
+    const newWeeks = weeks.map((w, i) =>
+      i === weeks.length - 1
+        ? {...w, deadline: newDl, closed: false, results: []}
+        : w
+    );
+    await setDoc(doc(db,'game','state'), {...gameState, weeks: newWeeks});
+    const promises = Object.keys(allPicks).map(uid =>
+      updateDoc(doc(db,'picks',uid), {[`weekly.${lastWeek.id}`]: deleteField()})
+    );
+    await Promise.all(promises);
+    alert('Hotovo! Tipy posledního kola smazány, kolo znovu otevřeno.');
+  };
   // Toggle bonus
   $('btn-toggle-bonus').onclick = async () => {
     await setDoc(doc(db,'game','state'),{...gameState,bonusOpen:!gameState.bonusOpen});
