@@ -457,7 +457,7 @@ const CONTESTANTS = {
     {id:'bety',     name:'Bety',     desc:'Alžběta Levínská, 25 — basketbalistka',    emoji:'🏀', tribe:'hrdinove'},
     {id:'iki',      name:'Iki',      desc:'Iki Ngatse, 25 — podcaster',               emoji:'🎙️', tribe:'padousi'},
     {id:'viviane',  name:'Viviane',  desc:'Viviane Kerstin, 25 — pilates instruktorka',emoji:'🧘', tribe:'hrdinove'},
-    {id:'leos',     name:'Leoš',     desc:'Leoš Svoboda, 23 — stážista v jaderné el.',emoji:'⚛️', tribe:'hrdinove'},
+    {id:'leos',     name:'Leoš',     desc:'Leoš Svoboda, 23 — stážista v jaderné el.',emoji:'⚛️', tribe:'hrdinove', disqualified:true},
     {id:'otakar',   name:'Otakar',   desc:'Otakar Šenkýř, 32 — designer',             emoji:'🎨', tribe:'padousi'},
     {id:'stanislav',name:'Stanislav',desc:'Stanislav Štěpánek, 28 — AI architekt',    emoji:'🤖', tribe:'hrdinove'},
     {id:'denisa',   name:'Denisa',   desc:'Denisa Ryndová, 25 — parkurová jezdkyně',  emoji:'🐎', tribe:'padousi'},
@@ -466,6 +466,7 @@ const CONTESTANTS = {
   ]
 };
 const getAllC = () => [...CONTESTANTS.celebs, ...CONTESTANTS.civilian];
+const getActiveC = () => getAllC().filter(c => !c.disqualified);
 const findById = id => getAllC().find(c => c.id === id);
 
 /* ═══════════════════════════════════════════════
@@ -776,10 +777,11 @@ function renderContestantGrid(containerId, list, mode, locked) {
     const isSelected = myData.winner===c.id;
     let cls = 'contestant-card';
     if(isSelected) cls+=' selected';
-    if(elimInfo) cls+=' eliminated';
+    if(elimInfo || c.disqualified) cls+=' eliminated';
     if(locked) cls+=' locked-card';
     return `<div class="${cls}" data-id="${c.id}">
       ${elimInfo?`<div class="elim-badge">#${elimInfo.order}</div>`:''}
+      ${c.disqualified&&!elimInfo?`<div class="elim-badge">DQ</div>`:''}
       <span class="contestant-emoji-sm">${c.emoji}</span>
       <div class="contestant-name-sm">${c.name}</div>
       <div class="contestant-desc-sm">${c.desc}</div>
@@ -912,7 +914,7 @@ function renderWeekly() {
 function renderWeeklyContestantGrid(openWeek, myWeekPick) {
   const grid = $('weekly-contestant-grid');
   if(!grid) return;
-  const active = getAllC().filter(c => !gameState.eliminated?.some(e=>e.id===c.id));
+  const active = getActiveC().filter(c => !gameState.eliminated?.some(e=>e.id===c.id));
   const nominees = openWeek.nominees || [];
 
   // Split active contestants by tribe; if nominees set, restrict to them
@@ -1126,13 +1128,15 @@ function renderBonus() {
     const classes = prefix==='out' ? ['','','','',''] : rankCls;
     const slots = arr.map((id,i) => {
       const c = id?findById(id):null;
-      return `<div class="bonus-slot${c?' filled':''}" data-prefix="${prefix}" data-slot="${i}">
+      const isDQ = c?.disqualified;
+      return `<div class="bonus-slot${c&&!isDQ?' filled':''}" data-prefix="${prefix}" data-slot="${i}">
         <div class="slot-num ${classes[i]}">${labels[i]}</div>
-        ${c ? `<div class="slot-filled-inner">
+        ${c && !isDQ ? `<div class="slot-filled-inner">
             <span class="slot-emoji">${c.emoji}</span>
             <div><div class="slot-name">${c.name}</div><div class="slot-desc">${c.desc}</div></div>
             ${!locked?`<button class="slot-remove" data-prefix="${prefix}" data-slot="${i}">✕</button>`:''}
           </div>`
+          : isDQ ? `<span class="slot-empty-txt" style="color:var(--red)">⛔ ${c.name} — diskvalifikován</span>`
           : `<span class="slot-empty-txt">${locked?'—':'Klikni pro výběr…'}</span>`}
       </div>`;
     }).join('');
@@ -1301,8 +1305,8 @@ function renderPickerGrid() {
       }).join('')}</div>`;
   };
 
-  grid.innerHTML = renderGroup('🏆 Hrdinové','tribe-a', getAllC().filter(c=>c.tribe==='hrdinove')) +
-                   renderGroup('💀 Padouši','tribe-b', getAllC().filter(c=>c.tribe==='padousi'));
+  grid.innerHTML = renderGroup('🏆 Hrdinové','tribe-a', getActiveC().filter(c=>c.tribe==='hrdinove')) +
+                   renderGroup('💀 Padouši','tribe-b', getActiveC().filter(c=>c.tribe==='padousi'));
 
   grid.querySelectorAll('.contestant-card:not(.eliminated):not(.already-picked)').forEach(card=>{
     card.onclick = () => {
@@ -1359,8 +1363,8 @@ function calcScore(data) {
 
   // Bonus FAR (who goes furthest — last 5 remaining/eliminated)
   // Can only be scored when ≤5 players remain (positions are definitive)
-  const totalPlayers = getAllC().length;
-  const elimOrder = elim.map(e=>e.id); // first out first
+  const totalPlayers = getActiveC().length;
+  const elimOrder = elim.map(e=>e.id).filter(id => !findById(id)?.disqualified); // first out first, DQ excluded
   const getRankFar = (id) => {
     const elimIdx = elimOrder.indexOf(id);
     if(elimIdx===-1) return totalPlayers; // still in game = highest
@@ -1375,7 +1379,7 @@ function calcScore(data) {
   let bonusFarScore=0;
   if(elim.length >= totalPlayers - 5) {
     // Enough eliminations — remaining ≤5 players are the definitive top 5
-    const top5far = getAllC().map(c=>({id:c.id,rank:getRankFar(c.id)})).sort((a,b)=>b.rank-a.rank).slice(0,5).map(x=>x.id);
+    const top5far = getActiveC().map(c=>({id:c.id,rank:getRankFar(c.id)})).sort((a,b)=>b.rank-a.rank).slice(0,5).map(x=>x.id);
     (data.bonusFar||[]).forEach((id,i)=>{
       if(!id) return;
       if(top5far.includes(id)) {
@@ -1470,6 +1474,7 @@ function renderLeaderboard() {
         <td><strong>${e.nick}</strong>${isMe?' <span style="color:var(--gold);font-size:.7rem">(ty)</span>':''}</td>
         <td>${(() => {
           if(!winC) return '<span style="color:var(--muted)">—</span>';
+          if(winC.disqualified) return `<span class="chip" style="background:rgba(192,57,43,.15);color:#e07070;border:1px solid rgba(192,57,43,.3);text-decoration:line-through">${winC.emoji} ${winC.name}</span> <span style="font-size:.7rem;color:#e07070">⛔ DQ</span>`;
           const isElim = (gameState.eliminated||[]).some(el=>el.id===e.data.winner);
           if(isElim) return `<span class="chip" style="background:rgba(192,57,43,.15);color:#e07070;border:1px solid rgba(192,57,43,.3);text-decoration:line-through">${winC.emoji} ${winC.name}</span> <span style="font-size:.7rem;color:#e07070">☠️ vyřazen</span>`;
           return `<span class="chip chip-w">${winC.emoji} ${winC.name}</span>`;
@@ -1644,7 +1649,7 @@ function renderAdmin() {
   const area = $('admin-area');
   const elim = gameState.eliminated||[];
   const weeks = gameState.weeks||[];
-  const active = getAllC().filter(c=>!elim.some(e=>e.id===c.id));
+  const active = getActiveC().filter(c=>!elim.some(e=>e.id===c.id));
   const now = new Date();
 
   area.innerHTML = `
@@ -1684,7 +1689,7 @@ function renderAdmin() {
       <div class="week-list" id="admin-week-list">
         ${weeks.map(w=>{
           const rc1 = w.results?.[0] ? findById(w.results[0]) : null;
-          const activeForResult = getAllC().filter(c=>!elim.some(e=>e.id===c.id));
+          const activeForResult = getActiveC().filter(c=>!elim.some(e=>e.id===c.id));
           return `<div class="week-item">
             <div class="week-item-name">Kolo ${w.weekNum} ${w.label?`· ${w.label}`:''} ${w.closed?'✓ uzavřeno':'⏳ otevřeno'}</div>
             <div class="week-item-result">
