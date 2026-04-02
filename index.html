@@ -424,6 +424,7 @@ const BONUS_OPEN_DATE = new Date("2026-02-27T00:00:00");
 const BONUS_DEADLINE  = new Date("2026-03-02T20:00:00");
 const BONUS_Q_DEADLINE = new Date("2026-03-09T20:00:00");
 const BONUS_Q2_DEADLINE = new Date("2026-03-16T20:00:00");
+const MERGE_DEADLINE  = new Date("2026-04-06T20:00:00");
 const WINNER_DEADLINE = new Date("2026-02-23T20:00:00");
 
 const app  = initializeApp(firebaseConfig);
@@ -572,6 +573,7 @@ async function initApp() {
   if(!myData.weekly)   myData.weekly = {};
   if(!myData.bonusQuestion) myData.bonusQuestion = null;
   if(!myData.bonusQuestion2) myData.bonusQuestion2 = null;
+  if(!myData.bonusMerge) myData.bonusMerge = Array(5).fill(null);
 
   // subscribe game state
   unsubGame = onSnapshot(doc(db,'game','state'), async snap => {
@@ -1197,8 +1199,44 @@ function renderBonus() {
     ${lockedQ2 ? '' : `<button class="btn-save-big" id="btn-save-bonus-q2" style="margin-bottom:24px">💾 Uložit bonusovou otázku 2</button>
      <span class="save-ok" id="bonus-q2-save-ok">✓ Uloženo!</span>`}`;
 
+  // Merge prediction: 5 contestants still in game who won't make it to merge
+  const merge = myData.bonusMerge || Array(5).fill(null);
+  const lockedMerge = now > MERGE_DEADLINE;
+  const mergeHappened = !!gameState.mergeHappened;
+
+  const mergeDeadlineInfo = lockedMerge
+    ? `<div style="font-size:.75rem;color:var(--red);margin-bottom:10px">🔒 Uzávěrka 6. 4. 2026 ve 20:00 — uzavřeno</div>`
+    : `<div style="font-size:.75rem;color:var(--green);margin-bottom:10px">⏳ Uzávěrka: 6. 4. 2026 ve 20:00</div>`;
+
+  const mergeSlots = merge.map((id,i) => {
+    const c = id?findById(id):null;
+    const isDQ = c?.disqualified;
+    const isElim = c && (gameState.eliminated||[]).some(e=>e.id===c.id);
+    return `<div class="bonus-slot${c&&!isDQ?' filled':''}" data-prefix="merge" data-slot="${i}">
+      <div class="slot-num">${i+1}.</div>
+      ${c && !isDQ ? `<div class="slot-filled-inner">
+          <span class="slot-emoji">${c.emoji}</span>
+          <div><div class="slot-name">${c.name}</div><div class="slot-desc">${c.desc}</div></div>
+          ${isElim ? '<span style="font-size:.7rem;color:var(--red)">☠️ vyřazen</span>' : ''}
+          ${!lockedMerge?`<button class="slot-remove" data-prefix="merge" data-slot="${i}">✕</button>`:''}
+        </div>`
+        : isDQ ? `<span class="slot-empty-txt" style="color:var(--red)">⛔ ${c.name} — diskvalifikován</span>`
+        : `<span class="slot-empty-txt">${lockedMerge?'—':'Klikni pro výběr…'}</span>`}
+    </div>`;
+  }).join('');
+
+  const bonusMergeHtml = `
+    <h4 style="font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:28px 0 10px">🔀 Kdo se nedostane do sloučení? — 10 bodů za správný tip</h4>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:8px">Vyber 5 soutěžících, kteří jsou stále ve hře a kteří podle tebe vypadnou před sloučením kmenů. Za každého správně tipnutého získáš 10 bodů.</p>
+    ${mergeDeadlineInfo}
+    ${mergeHappened ? `<div style="font-size:.8rem;color:var(--gold);margin-bottom:10px;padding:8px 12px;background:rgba(244,165,34,.08);border:1px solid rgba(244,165,34,.2);border-radius:3px">🔀 Sloučení kmenů již proběhlo — tipy jsou vyhodnoceny!</div>` : ''}
+    <div class="bonus-list">${mergeSlots}</div>
+    ${!lockedMerge ? `<button class="btn-save-big" id="btn-save-merge">💾 Uložit tip na sloučení</button>
+     <span class="save-ok" id="merge-save-ok">✓ Uloženo!</span>` : ''}`;
+
   area.innerHTML = renderSlots(far,'far','🏆 Top 5 — dojdou nejdál','Seřaď od 1. místa (vítěz) do 5. místa. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
     renderSlots(out,'out','💀 2.–6. vyřazený','Tipuj, kdo vypadne jako druhý až šestý. Přesná pozice = 20b, správný hráč na jiné pozici = 10b.') +
+    bonusMergeHtml +
     bonusQuestionHtml +
     bonusQuestion2Html +
     (locked ? '' : `<button class="btn-save-big" id="btn-save-bonus">💾 Uložit bonusový tip</button>
@@ -1242,16 +1280,42 @@ function renderBonus() {
     }
   }
 
+  // Merge slot clicks (own deadline)
+  if(!lockedMerge) {
+    area.querySelectorAll('.bonus-slot[data-prefix="merge"]').forEach(slot => {
+      slot.onclick = (e) => {
+        if(e.target.classList.contains('slot-remove')||e.target.closest('.slot-remove')) return;
+        openPicker('bonus-merge', parseInt(slot.dataset.slot));
+      };
+    });
+    area.querySelectorAll('.slot-remove[data-prefix="merge"]').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        myData.bonusMerge[parseInt(btn.dataset.slot)]=null;
+        renderBonus();
+      };
+    });
+    const btnSaveMerge = $('btn-save-merge');
+    if(btnSaveMerge) {
+      btnSaveMerge.onclick = async () => {
+        btnSaveMerge.disabled=true; btnSaveMerge.textContent='⏳…';
+        await saveMyData();
+        btnSaveMerge.textContent='💾 Uložit tip na sloučení'; btnSaveMerge.disabled=false;
+        flash('merge-save-ok');
+      };
+    }
+  }
+
   if(locked) return;
 
-  // Slot clicks
-  area.querySelectorAll('.bonus-slot').forEach(slot => {
+  // Slot clicks (far/out)
+  area.querySelectorAll('.bonus-slot[data-prefix="far"], .bonus-slot[data-prefix="out"]').forEach(slot => {
     slot.onclick = (e) => {
       if(e.target.classList.contains('slot-remove')||e.target.closest('.slot-remove')) return;
       openPicker(slot.dataset.prefix==='far'?'bonus-far':'bonus-out', parseInt(slot.dataset.slot));
     };
   });
-  area.querySelectorAll('.slot-remove').forEach(btn => {
+  area.querySelectorAll('.slot-remove[data-prefix="far"], .slot-remove[data-prefix="out"]').forEach(btn => {
     btn.onclick = (e) => {
       e.stopPropagation();
       const p=btn.dataset.prefix, s=parseInt(btn.dataset.slot);
@@ -1272,7 +1336,7 @@ function renderBonus() {
 ═══════════════════════════════════════════════ */
 function openPicker(mode, slot=null) {
   pickerMode=mode; pickerSlot=slot; pickerSelected=null;
-  const titles = {winner:'Vyber vítěze sezóny','bonus-far':'Vyber soutěžícího — nejdál','bonus-out':'Vyber soutěžícího — 2.–6. vyřazený', weekly:'Vyber soutěžícího'};
+  const titles = {winner:'Vyber vítěze sezóny','bonus-far':'Vyber soutěžícího — nejdál','bonus-out':'Vyber soutěžícího — 2.–6. vyřazený','bonus-merge':'Vyber — nevydrží do sloučení', weekly:'Vyber soutěžícího'};
   $('picker-title').textContent = titles[mode]||'Vyber soutěžícího';
   $('picker-confirm').style.display='none';
   renderPickerGrid();
@@ -1284,6 +1348,7 @@ function renderPickerGrid() {
   // Already picked in bonus slots
   const alreadyFar = (myData.bonusFar||[]).filter(Boolean);
   const alreadyOut = (myData.bonusOut||[]).filter(Boolean);
+  const alreadyMerge = (myData.bonusMerge||[]).filter(Boolean);
 
   const renderGroup = (label, cls, list) => {
     return `<div class="tribe-label ${cls}" style="margin-top:12px">${label}</div>
@@ -1292,6 +1357,7 @@ function renderPickerGrid() {
         let alreadyPicked = false;
         if(pickerMode==='bonus-far') alreadyPicked = alreadyFar.includes(c.id) && myData.bonusFar[pickerSlot]!==c.id;
         if(pickerMode==='bonus-out') alreadyPicked = alreadyOut.includes(c.id) && myData.bonusOut[pickerSlot]!==c.id;
+        if(pickerMode==='bonus-merge') { alreadyPicked = alreadyMerge.includes(c.id) && myData.bonusMerge[pickerSlot]!==c.id; if(elim) alreadyPicked = true; }
         const isSelected = pickerSelected===c.id;
         let cls2='contestant-card';
         if(isSelected) cls2+=' selected';
@@ -1325,6 +1391,9 @@ function confirmPick() {
     renderBonus();
   } else if(pickerMode==='bonus-out') {
     myData.bonusOut[pickerSlot] = pickerSelected;
+    renderBonus();
+  } else if(pickerMode==='bonus-merge') {
+    myData.bonusMerge[pickerSlot] = pickerSelected;
     renderBonus();
   }
   closePicker();
@@ -1432,7 +1501,20 @@ function calcScore(data) {
   breakdown.bonusQ2Score=bonusQ2Score;
   score+=bonusQ2Score;
 
-  breakdown.bonusTotal=bonusFarScore+bonusOutScore+bonusQScore+bonusQ2Score;
+  // Bonus merge: contestants eliminated before merge
+  let bonusMergeScore=0;
+  if(gameState.mergeHappened) {
+    // mergeHappened is set by admin when merge occurs
+    // All contestants eliminated before merge are "correct" picks
+    (data.bonusMerge||[]).forEach(id=>{
+      if(!id) return;
+      if(elimOrder.includes(id)) bonusMergeScore+=10;
+    });
+  }
+  breakdown.bonusMergeScore=bonusMergeScore;
+  score+=bonusMergeScore;
+
+  breakdown.bonusTotal=bonusFarScore+bonusOutScore+bonusQScore+bonusQ2Score+bonusMergeScore;
   score+=weekHits; // 1 bod za kazdeho trefeneho
   breakdown.total=score;
   return breakdown;
@@ -1483,7 +1565,7 @@ function renderLeaderboard() {
           <span style="font-family:'Bebas Neue',cursive;font-size:1.2rem;color:${e.score.weekHits>0?'var(--green)':'var(--muted)'}">${e.score.weekHits}</span>
           <span style="color:var(--muted);font-size:.75rem"> / ${e.score.weekTotal} b</span>
         </td>
-        <td><span class="chip chip-b">${e.score.bonusFarScore}b</span> <span class="chip chip-fo">${e.score.bonusOutScore}b</span> <span class="chip" style="background:rgba(244,165,34,.12);color:var(--gold);border:1px solid rgba(244,165,34,.25)">${e.score.bonusQScore}b</span></td>
+        <td><span class="chip chip-b">${e.score.bonusFarScore}b</span> <span class="chip chip-fo">${e.score.bonusOutScore}b</span> <span class="chip" style="background:rgba(244,165,34,.12);color:var(--gold);border:1px solid rgba(244,165,34,.25)">${e.score.bonusQScore}b</span> <span class="chip" style="background:rgba(45,74,30,.15);color:var(--green);border:1px solid rgba(45,74,30,.3)">${e.score.bonusMergeScore||0}b</span></td>
         <td><span class="score-big">${e.score.bonusTotal}</span></td>
       </tr>`;
     }).join('')}</tbody>
@@ -1577,6 +1659,7 @@ function renderLeaderboard() {
   const bonusEntries = entries.filter(e =>
     (e.data.bonusFar && e.data.bonusFar.some(Boolean)) ||
     (e.data.bonusOut && e.data.bonusOut.some(Boolean)) ||
+    (e.data.bonusMerge && e.data.bonusMerge.some(Boolean)) ||
     e.data.bonusQuestion ||
     e.data.bonusQuestion2
   );
@@ -1594,6 +1677,10 @@ function renderLeaderboard() {
         const c = id?findById(id):null;
         return c ? `<span style="display:block;font-size:.78rem;white-space:nowrap">${outLabels[j]} ${c.emoji} ${c.name}</span>` : `<span style="display:block;font-size:.78rem;color:var(--muted)">${outLabels[j]} —</span>`;
       }).join('');
+      const mergeCells = (e.data.bonusMerge||Array(5).fill(null)).map((id,j)=>{
+        const c = id?findById(id):null;
+        return c ? `<span style="display:block;font-size:.78rem;white-space:nowrap">${j+1}. ${c.emoji} ${c.name}</span>` : `<span style="display:block;font-size:.78rem;color:var(--muted)">${j+1}. —</span>`;
+      }).join('');
       const bqPick = e.data.bonusQuestion ? findById(e.data.bonusQuestion) : null;
       const bq2Pick = e.data.bonusQuestion2;
       const bq2Label = bq2Pick==='vrati' ? '🔄 Vrátí se' : bq2Pick==='zustane' ? '✋ Zůstane' : null;
@@ -1601,6 +1688,7 @@ function renderLeaderboard() {
         <td><strong>${e.nick}</strong>${isMe?' <span style="color:var(--gold);font-size:.7rem">(ty)</span>':''}</td>
         <td>${farCells}</td>
         <td>${outCells}</td>
+        <td>${mergeCells}</td>
         <td style="text-align:center">${bqPick ? `<span style="font-size:.85rem">${bqPick.emoji} ${bqPick.name}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
         <td style="text-align:center">${bq2Label ? `<span style="font-size:.85rem">${bq2Label}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
         <td style="text-align:center">
@@ -1608,6 +1696,7 @@ function renderLeaderboard() {
           <span class="chip chip-fo">${e.score.bonusOutScore}b</span>
           <span class="chip" style="background:rgba(244,165,34,.12);color:var(--gold);border:1px solid rgba(244,165,34,.25)">${e.score.bonusQScore||0}b</span>
           <span class="chip" style="background:rgba(244,165,34,.12);color:var(--gold);border:1px solid rgba(244,165,34,.25)">${e.score.bonusQ2Score||0}b</span>
+          <span class="chip" style="background:rgba(45,74,30,.15);color:var(--green);border:1px solid rgba(45,74,30,.3)">${e.score.bonusMergeScore||0}b</span>
         </td>
       </tr>`;
     }).join('');
@@ -1622,6 +1711,7 @@ function renderLeaderboard() {
             <th>Hráč</th>
             <th>🏆 Top 5 — nejdál</th>
             <th>💀 2.–6. vyřazený</th>
+            <th>🔀 Před sloučením</th>
             <th style="text-align:center">❓ Otázka 1</th>
             <th style="text-align:center">❓ Otázka 2</th>
             <th style="text-align:center">Body</th>
@@ -1745,6 +1835,17 @@ function renderAdmin() {
     </div>
 
     <div class="admin-section">
+      <h4>🔀 Sloučení kmenů (merge)</h4>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Označ, že sloučení kmenů již proběhlo. Po označení se vyhodnotí tipy na sloučení — soutěžící vyřazení před sloučením = správný tip.</p>
+      <div class="admin-row" style="gap:8px">
+        <span style="font-size:.85rem;color:var(--muted)">Stav: <strong style="color:var(--sand)">${gameState.mergeHappened?'✅ Sloučení proběhlo':'⏳ Ještě neproběhlo'}</strong></span>
+        <button class="btn-admin ${gameState.mergeHappened?'danger':'success'}" id="btn-toggle-merge">
+          ${gameState.mergeHappened?'↩️ Zrušit sloučení':'🔀 Označit sloučení'}
+        </button>
+      </div>
+    </div>
+
+    <div class="admin-section">
       <h4>⏰ Prodloužení bonusu pro hráče</h4>
       <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Nastav individuální deadline pro konkrétního hráče (přepíše globální uzávěrku).</p>
       ${Object.entries(allPicks).sort(([,a],[,b])=>a.nick.localeCompare(b.nick)).map(([uid,data])=>{
@@ -1847,6 +1948,10 @@ function renderAdmin() {
   // Toggle bonus
   $('btn-toggle-bonus').onclick = async () => {
     await setDoc(doc(db,'game','state'),{...gameState,bonusOpen:!gameState.bonusOpen});
+  };
+  // Toggle merge
+  $('btn-toggle-merge').onclick = async () => {
+    await setDoc(doc(db,'game','state'),{...gameState,mergeHappened:!gameState.mergeHappened});
   };
   // Bonus question 2 answer
   const btnBq2Vrati = $('btn-bq2-vrati');
