@@ -567,30 +567,15 @@ async function initApp() {
   }
   $('user-avatar').textContent = n[0].toUpperCase();
 
-  // subscribe my picks (live — reaguje i na admin změny jako mergeExtension, bonusExtension)
-  await new Promise(resolve => {
-    let resolved = false;
-    unsubMyData = onSnapshot(doc(db,'picks',currentUser.uid), snap => {
-      const fresh = snap.exists() ? snap.data() : {};
-      // Preserve in-memory picks arrays (user may have unsaved changes) only on subsequent updates
-      if(!resolved) {
-        myData = {winner:null, bonusFar:Array(5).fill(null), bonusOut:Array(5).fill(null), weekly:{}, ...fresh};
-      } else {
-        // Keep user's in-memory picks but sync admin-managed fields
-        myData.bonusExtension = fresh.bonusExtension;
-        myData.mergeExtension = fresh.mergeExtension;
-        myData.nick = fresh.nick;
-      }
-      if(!myData.bonusFar) myData.bonusFar = Array(5).fill(null);
-      if(!myData.bonusOut) myData.bonusOut = Array(5).fill(null);
-      if(!myData.weekly)   myData.weekly = {};
-      if(!myData.bonusQuestion) myData.bonusQuestion = null;
-      if(!myData.bonusQuestion2) myData.bonusQuestion2 = null;
-      if(!myData.bonusMerge) myData.bonusMerge = Array(5).fill(null);
-      if(!resolved) { resolved = true; resolve(); }
-      else renderAll();
-    });
-  });
+  // load my picks (one-time)
+  const pd = await getDoc(doc(db,'picks',currentUser.uid));
+  myData = pd.exists() ? pd.data() : {winner:null, bonusFar:Array(5).fill(null), bonusOut:Array(5).fill(null), weekly:{}};
+  if(!myData.bonusFar) myData.bonusFar = Array(5).fill(null);
+  if(!myData.bonusOut) myData.bonusOut = Array(5).fill(null);
+  if(!myData.weekly)   myData.weekly = {};
+  if(!myData.bonusQuestion) myData.bonusQuestion = null;
+  if(!myData.bonusQuestion2) myData.bonusQuestion2 = null;
+  if(!myData.bonusMerge) myData.bonusMerge = Array(5).fill(null);
 
   // subscribe game state
   unsubGame = onSnapshot(doc(db,'game','state'), async snap => {
@@ -1218,7 +1203,8 @@ function renderBonus() {
 
   // Merge prediction: 5 contestants still in game who won't make it to merge
   const merge = myData.bonusMerge || Array(5).fill(null);
-  const mergePersonalDeadline = myData.mergeExtension ? myData.mergeExtension.toDate() : null;
+  const mergeExtRaw = gameState.mergeExtensions?.[currentUser.uid];
+  const mergePersonalDeadline = mergeExtRaw ? (mergeExtRaw.toDate ? mergeExtRaw.toDate() : new Date(mergeExtRaw)) : null;
   const effectiveMergeDeadline = (mergePersonalDeadline && mergePersonalDeadline > MERGE_DEADLINE) ? mergePersonalDeadline : MERGE_DEADLINE;
   const lockedMerge = now > effectiveMergeDeadline;
   const mergeHappened = !!gameState.mergeHappened;
@@ -1887,9 +1873,10 @@ function renderAdmin() {
       <h4>🔀 Prodloužení tipu na sloučení pro hráče</h4>
       <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Nastav individuální deadline tipu „kdo se nedostane do sloučení" pro konkrétního hráče (přepíše globální uzávěrku 6. 4. 2026 20:00).</p>
       ${Object.entries(allPicks).sort(([,a],[,b])=>a.nick.localeCompare(b.nick)).map(([uid,data])=>{
-        const mext = data.mergeExtension ? data.mergeExtension.toDate() : null;
+        const mextRaw = gameState.mergeExtensions?.[uid];
+        const mext = mextRaw ? (mextRaw.toDate ? mextRaw.toDate() : new Date(mextRaw)) : null;
         const mextActive = mext && mext > now;
-        const mextStr = mext ? mext.toISOString().slice(0,16) : '';
+        const mextStr = mext ? new Date(mext.getTime() - mext.getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
         return `<div class="admin-row" style="margin-bottom:8px;flex-wrap:wrap;gap:6px;align-items:center">
           <span style="min-width:80px;font-weight:600">${data.nick}</span>
           ${mextActive?`<span style="font-size:.75rem;color:var(--green)">✅ do ${mext.toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}
@@ -2020,7 +2007,7 @@ function renderAdmin() {
       await updateDoc(doc(db,'picks',uid), {bonusExtension: deleteField()});
     };
   });
-  // Per-user merge extension
+  // Per-user merge extension (stored in game/state to avoid cross-user permission issues)
   area.querySelectorAll('[data-set-mext]').forEach(btn => {
     btn.onclick = async () => {
       const uid = btn.dataset.setMext;
@@ -2028,7 +2015,8 @@ function renderAdmin() {
       if(!dtVal) return alert('Vyber datum a čas!');
       try {
         btn.disabled = true; btn.textContent = '⏳…';
-        await setDoc(doc(db,'picks',uid), {mergeExtension: new Date(dtVal)}, {merge: true});
+        const exts = {...(gameState.mergeExtensions||{}), [uid]: new Date(dtVal)};
+        await setDoc(doc(db,'game','state'), {...gameState, mergeExtensions: exts});
         btn.textContent = '✓ Uloženo!';
         setTimeout(() => { btn.textContent = 'Nastavit'; btn.disabled = false; }, 2000);
       } catch(e) {
@@ -2041,7 +2029,9 @@ function renderAdmin() {
     btn.onclick = async () => {
       const uid = btn.dataset.clearMext;
       try {
-        await setDoc(doc(db,'picks',uid), {mergeExtension: deleteField()}, {merge: true});
+        const exts = {...(gameState.mergeExtensions||{})};
+        delete exts[uid];
+        await setDoc(doc(db,'game','state'), {...gameState, mergeExtensions: exts});
       } catch(e) {
         alert('Chyba: ' + e.message);
       }
