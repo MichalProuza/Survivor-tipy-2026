@@ -2026,7 +2026,7 @@ function renderAdmin() {
 async function saveMyData() {
   await setDoc(doc(db,'picks',currentUser.uid),{
     ...myData, nick:nick(currentUser), updatedAt:new Date().toISOString()
-  });
+  }, {merge: true});
 }
 
 /* ═══════════════════════════════════════════════
