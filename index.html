@@ -1201,12 +1201,16 @@ function renderBonus() {
 
   // Merge prediction: 5 contestants still in game who won't make it to merge
   const merge = myData.bonusMerge || Array(5).fill(null);
-  const lockedMerge = now > MERGE_DEADLINE;
+  const mergePersonalDeadline = myData.mergeExtension ? myData.mergeExtension.toDate() : null;
+  const effectiveMergeDeadline = (mergePersonalDeadline && mergePersonalDeadline > MERGE_DEADLINE) ? mergePersonalDeadline : MERGE_DEADLINE;
+  const lockedMerge = now > effectiveMergeDeadline;
   const mergeHappened = !!gameState.mergeHappened;
 
   const mergeDeadlineInfo = lockedMerge
-    ? `<div style="font-size:.75rem;color:var(--red);margin-bottom:10px">🔒 Uzávěrka 6. 4. 2026 ve 20:00 — uzavřeno</div>`
-    : `<div style="font-size:.75rem;color:var(--green);margin-bottom:10px">⏳ Uzávěrka: 6. 4. 2026 ve 20:00</div>`;
+    ? `<div style="font-size:.75rem;color:var(--red);margin-bottom:10px">🔒 Uzávěrka ${effectiveMergeDeadline.toLocaleString('cs-CZ',{day:'numeric',month:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})} — uzavřeno</div>`
+    : mergePersonalDeadline && mergePersonalDeadline > MERGE_DEADLINE
+      ? `<div style="font-size:.75rem;color:var(--gold);margin-bottom:10px">⭐ Prodlouženo do ${effectiveMergeDeadline.toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</div>`
+      : `<div style="font-size:.75rem;color:var(--green);margin-bottom:10px">⏳ Uzávěrka: 6. 4. 2026 ve 20:00</div>`;
 
   const mergeSlots = merge.map((id,i) => {
     const c = id?findById(id):null;
@@ -1862,6 +1866,23 @@ function renderAdmin() {
       }).join('')}
     </div>
 
+    <div class="admin-section">
+      <h4>🔀 Prodloužení tipu na sloučení pro hráče</h4>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Nastav individuální deadline tipu „kdo se nedostane do sloučení" pro konkrétního hráče (přepíše globální uzávěrku 6. 4. 2026 20:00).</p>
+      ${Object.entries(allPicks).sort(([,a],[,b])=>a.nick.localeCompare(b.nick)).map(([uid,data])=>{
+        const mext = data.mergeExtension ? data.mergeExtension.toDate() : null;
+        const mextActive = mext && mext > now;
+        const mextStr = mext ? mext.toISOString().slice(0,16) : '';
+        return `<div class="admin-row" style="margin-bottom:8px;flex-wrap:wrap;gap:6px;align-items:center">
+          <span style="min-width:80px;font-weight:600">${data.nick}</span>
+          ${mextActive?`<span style="font-size:.75rem;color:var(--green)">✅ do ${mext.toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}
+          <input type="datetime-local" id="mext-dt-${uid}" value="${mextStr}" style="font-size:.85rem">
+          <button class="btn-admin" data-set-mext="${uid}">Nastavit</button>
+          ${mext?`<button class="btn-admin danger" data-clear-mext="${uid}">✕ Zrušit</button>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+
   </div>`;
 
   // Elim add
@@ -1980,6 +2001,21 @@ function renderAdmin() {
     btn.onclick = async () => {
       const uid = btn.dataset.clearExt;
       await updateDoc(doc(db,'picks',uid), {bonusExtension: deleteField()});
+    };
+  });
+  // Per-user merge extension
+  area.querySelectorAll('[data-set-mext]').forEach(btn => {
+    btn.onclick = async () => {
+      const uid = btn.dataset.setMext;
+      const dtVal = $(`mext-dt-${uid}`)?.value;
+      if(!dtVal) return alert('Vyber datum a čas!');
+      await updateDoc(doc(db,'picks',uid), {mergeExtension: new Date(dtVal)});
+    };
+  });
+  area.querySelectorAll('[data-clear-mext]').forEach(btn => {
+    btn.onclick = async () => {
+      const uid = btn.dataset.clearMext;
+      await updateDoc(doc(db,'picks',uid), {mergeExtension: deleteField()});
     };
   });
 }
