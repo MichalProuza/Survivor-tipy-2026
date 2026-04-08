@@ -776,6 +776,12 @@ function startWinnerCountdown() {
 function renderContestantGrid(containerId, list, mode, locked) {
   const el = $(containerId);
   if(!el) return;
+  // Compute effective elimination order excluding disqualified contestants
+  const elimSortedNonDQ = (gameState.eliminated||[])
+    .filter(e => !findById(e.id)?.disqualified)
+    .sort((a,b) => a.order - b.order);
+  const effectiveOrderMap = {};
+  elimSortedNonDQ.forEach((e, i) => { effectiveOrderMap[e.id] = i + 1; });
   el.innerHTML = list.map(c => {
     const elimInfo = gameState.eliminated?.find(e=>e.id===c.id);
     const isSelected = myData.winner===c.id;
@@ -784,8 +790,8 @@ function renderContestantGrid(containerId, list, mode, locked) {
     if(elimInfo || c.disqualified) cls+=' eliminated';
     if(locked) cls+=' locked-card';
     return `<div class="${cls}" data-id="${c.id}">
-      ${elimInfo?`<div class="elim-badge">#${elimInfo.order}</div>`:''}
-      ${c.disqualified&&!elimInfo?`<div class="elim-badge">DQ</div>`:''}
+      ${elimInfo && !c.disqualified?`<div class="elim-badge">#${effectiveOrderMap[c.id] || elimInfo.order}</div>`:''}
+      ${c.disqualified?`<div class="elim-badge">DQ</div>`:''}
       <span class="contestant-emoji-sm">${c.emoji}</span>
       <div class="contestant-name-sm">${c.name}</div>
       <div class="contestant-desc-sm">${c.desc}</div>
