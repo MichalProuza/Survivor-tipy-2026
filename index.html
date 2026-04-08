@@ -1134,8 +1134,8 @@ function renderBonus() {
   const rankCls    = ['gold','silver','bronze','',''];
 
   // Elimination order excluding disqualified — used for hit/miss feedback
-  const elimOrderBonus = (gameState.eliminated||[])
-    .map(e=>e.id).filter(id => !findById(id)?.disqualified);
+  const elimOrderBonus = [...(gameState.eliminated||[])]
+    .filter(e => !findById(e.id)?.disqualified).sort((a,b)=>a.order-b.order).map(e=>e.id);
   const knownOutBonus = elimOrderBonus.slice(1, Math.min(6, elimOrderBonus.length));
 
   const renderSlots = (arr, prefix, title, subtitle) => {
@@ -1463,7 +1463,7 @@ function calcScore(data) {
   // Bonus FAR (who goes furthest — last 5 remaining/eliminated)
   // Can only be scored when ≤5 players remain (positions are definitive)
   const totalPlayers = getActiveC().length;
-  const elimOrder = elim.map(e=>e.id).filter(id => !findById(id)?.disqualified); // first out first, DQ excluded
+  const elimOrder = [...elim].filter(e => !findById(e.id)?.disqualified).sort((a,b)=>a.order-b.order).map(e=>e.id); // sorted by order, DQ excluded
   const getRankFar = (id) => {
     const elimIdx = elimOrder.indexOf(id);
     if(elimIdx===-1) return totalPlayers; // still in game = highest
@@ -1697,8 +1697,8 @@ function renderLeaderboard() {
     const farLabels = ['🥇','🥈','🥉','4.','5.'];
     const outLabels = ['2.','3.','4.','5.','6.'];
     // Elimination order (DQ excluded) for hit/miss coloring
-    const elimOrderLb = (gameState.eliminated||[])
-      .map(e=>e.id).filter(id => !findById(id)?.disqualified);
+    const elimOrderLb = [...(gameState.eliminated||[])]
+      .filter(e => !findById(e.id)?.disqualified).sort((a,b)=>a.order-b.order).map(e=>e.id);
     const knownOutLb = elimOrderLb.slice(1, Math.min(6, elimOrderLb.length));
 
     const bonusRows = bonusEntries.map((e,i)=>{
