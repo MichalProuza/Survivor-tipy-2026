@@ -1133,17 +1133,34 @@ function renderBonus() {
   const rankLabels = ['🥇','🥈','🥉','4.','5.'];
   const rankCls    = ['gold','silver','bronze','',''];
 
+  // Elimination order excluding disqualified — used for hit/miss feedback
+  const elimOrderBonus = (gameState.eliminated||[])
+    .map(e=>e.id).filter(id => !findById(id)?.disqualified);
+  const knownOutBonus = elimOrderBonus.slice(1, Math.min(6, elimOrderBonus.length));
+
   const renderSlots = (arr, prefix, title, subtitle) => {
     const labels = prefix==='out' ? ['2.','3.','4.','5.','6.'] : rankLabels;
     const classes = prefix==='out' ? ['','','','',''] : rankCls;
     const slots = arr.map((id,i) => {
       const c = id?findById(id):null;
       const isDQ = c?.disqualified;
+      let scoreHint = '';
+      if(locked && c && !isDQ && prefix === 'out') {
+        const posKnown = elimOrderBonus.length > i+1;
+        if(posKnown) {
+          const isExact = elimOrderBonus[i+1] === id;
+          const isPartial = !isExact && knownOutBonus.includes(id);
+          if(isExact) scoreHint = '<span style="font-size:.7rem;color:var(--green);margin-left:auto">✓ +20b</span>';
+          else if(isPartial) scoreHint = '<span style="font-size:.7rem;color:var(--gold);margin-left:auto">~ +10b</span>';
+          else scoreHint = '<span style="font-size:.7rem;color:var(--red);margin-left:auto">✗ 0b</span>';
+        }
+      }
       return `<div class="bonus-slot${c&&!isDQ?' filled':''}" data-prefix="${prefix}" data-slot="${i}">
         <div class="slot-num ${classes[i]}">${labels[i]}</div>
         ${c && !isDQ ? `<div class="slot-filled-inner">
             <span class="slot-emoji">${c.emoji}</span>
             <div><div class="slot-name">${c.name}</div><div class="slot-desc">${c.desc}</div></div>
+            ${scoreHint}
             ${!locked?`<button class="slot-remove" data-prefix="${prefix}" data-slot="${i}">✕</button>`:''}
           </div>`
           : isDQ ? `<span class="slot-empty-txt" style="color:var(--red)">⛔ ${c.name} — diskvalifikován</span>`
@@ -1679,6 +1696,10 @@ function renderLeaderboard() {
   if(bonusEntries.length > 0) {
     const farLabels = ['🥇','🥈','🥉','4.','5.'];
     const outLabels = ['2.','3.','4.','5.','6.'];
+    // Elimination order (DQ excluded) for hit/miss coloring
+    const elimOrderLb = (gameState.eliminated||[])
+      .map(e=>e.id).filter(id => !findById(id)?.disqualified);
+    const knownOutLb = elimOrderLb.slice(1, Math.min(6, elimOrderLb.length));
 
     const bonusRows = bonusEntries.map((e,i)=>{
       const isMe = e.nick===myNick;
@@ -1688,7 +1709,13 @@ function renderLeaderboard() {
       }).join('');
       const outCells = (e.data.bonusOut||Array(5).fill(null)).map((id,j)=>{
         const c = id?findById(id):null;
-        return c ? `<span style="display:block;font-size:.78rem;white-space:nowrap">${outLabels[j]} ${c.emoji} ${c.name}</span>` : `<span style="display:block;font-size:.78rem;color:var(--muted)">${outLabels[j]} —</span>`;
+        if(!c) return `<span style="display:block;font-size:.78rem;color:var(--muted)">${outLabels[j]} —</span>`;
+        const posKnown = elimOrderLb.length > j+1;
+        const isExact = posKnown && elimOrderLb[j+1] === id;
+        const isPartial = posKnown && !isExact && knownOutLb.includes(id);
+        const color = isExact ? 'var(--green)' : isPartial ? 'var(--gold)' : posKnown ? '#e07070' : 'var(--cream)';
+        const suffix = isExact ? ' ✓' : isPartial ? ' ~' : posKnown ? ' ✗' : '';
+        return `<span style="display:block;font-size:.78rem;white-space:nowrap;color:${color}">${outLabels[j]} ${c.emoji} ${c.name}${suffix}</span>`;
       }).join('');
       const mergeCells = (e.data.bonusMerge||Array(5).fill(null)).map((id,j)=>{
         const c = id?findById(id):null;
