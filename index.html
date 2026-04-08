@@ -462,8 +462,8 @@ const CONTESTANTS = {
     {id:'otakar',   name:'Otakar',   desc:'Otakar Šenkýř, 32 — designer',             emoji:'🎨', tribe:'padousi'},
     {id:'stanislav',name:'Stanislav',desc:'Stanislav Štěpánek, 28 — AI architekt',    emoji:'🤖', tribe:'hrdinove'},
     {id:'denisa',   name:'Denisa',   desc:'Denisa Ryndová, 25 — parkurová jezdkyně',  emoji:'🐎', tribe:'padousi'},
-    {id:'johana2',  name:'Johana II.', desc:'Johana (II. série) — kandidátka',           emoji:'🌟', tribe:'padousi'},
-    {id:'kristyna3',name:'Kristýna III.',desc:'Kristýna (III. série) — kandidátka',      emoji:'✨', tribe:'padousi'},
+    {id:'johana2',  name:'Johana II.', desc:'Johana (II. série) — kandidátka',           emoji:'🌟', tribe:'padousi', lateEntry:true},
+    {id:'kristyna3',name:'Kristýna III.',desc:'Kristýna (III. série) — kandidátka',      emoji:'✨', tribe:'padousi', lateEntry:true},
   ]
 };
 const getAllC = () => [...CONTESTANTS.celebs, ...CONTESTANTS.civilian];
@@ -1136,7 +1136,9 @@ function renderBonus() {
   // Elimination order excluding disqualified — used for hit/miss feedback
   const elimOrderBonus = [...(gameState.eliminated||[])]
     .filter(e => !findById(e.id)?.disqualified).sort((a,b)=>a.order-b.order).map(e=>e.id);
-  const knownOutBonus = elimOrderBonus.slice(1, Math.min(6, elimOrderBonus.length));
+  // For bonusOut hints: exclude late-entry contestants so original positions align
+  const elimOrderBonusForOut = elimOrderBonus.filter(id => !findById(id)?.lateEntry);
+  const knownOutBonus = elimOrderBonusForOut.slice(1, Math.min(6, elimOrderBonusForOut.length));
 
   const renderSlots = (arr, prefix, title, subtitle) => {
     const labels = prefix==='out' ? ['2.','3.','4.','5.','6.'] : rankLabels;
@@ -1146,9 +1148,9 @@ function renderBonus() {
       const isDQ = c?.disqualified;
       let scoreHint = '';
       if(locked && c && !isDQ && prefix === 'out') {
-        const posKnown = elimOrderBonus.length > i+1;
+        const posKnown = elimOrderBonusForOut.length > i+1;
         if(posKnown) {
-          const isExact = elimOrderBonus[i+1] === id;
+          const isExact = elimOrderBonusForOut[i+1] === id;
           const isPartial = !isExact && knownOutBonus.includes(id);
           if(isExact) scoreHint = '<span style="font-size:.7rem;color:var(--green);margin-left:auto">✓ +20b</span>';
           else if(isPartial) scoreHint = '<span style="font-size:.7rem;color:var(--gold);margin-left:auto">~ +10b</span>';
@@ -1464,6 +1466,8 @@ function calcScore(data) {
   // Can only be scored when ≤5 players remain (positions are definitive)
   const totalPlayers = getActiveC().length;
   const elimOrder = [...elim].filter(e => !findById(e.id)?.disqualified).sort((a,b)=>a.order-b.order).map(e=>e.id); // sorted by order, DQ excluded
+  // For bonusOut: exclude late-entry contestants (johana2, kristyna3) so original-contestant positions stay aligned
+  const elimOrderForOut = elimOrder.filter(id => !findById(id)?.lateEntry);
   const getRankFar = (id) => {
     const elimIdx = elimOrder.indexOf(id);
     if(elimIdx===-1) return totalPlayers; // still in game = highest
@@ -1491,14 +1495,15 @@ function calcScore(data) {
   score+=bonusFarScore;
 
   let bonusOutScore=0;
-  if(elim.length >= 2) {
+  if(elimOrderForOut.length >= 2) {
     // Progressive scoring — score as soon as 2nd eliminated is known
-    const knownOut = elimOrder.slice(1, Math.min(6, elimOrder.length)); // known positions 2–6
+    // Uses elimOrderForOut (late-entry contestants excluded) so original-contestant positions stay aligned
+    const knownOut = elimOrderForOut.slice(1, Math.min(6, elimOrderForOut.length)); // known positions 2–6
     (data.bonusOut||[]).forEach((id,i)=>{
       if(!id) return;
       if(knownOut.includes(id)) {
-        // i=0 → 2nd elim (elimOrder[1]), i=1 → 3rd, etc.
-        if(elimOrder[i+1]===id) bonusOutScore+=20; // exact position
+        // i=0 → 2nd elim (elimOrderForOut[1]), i=1 → 3rd, etc.
+        if(elimOrderForOut[i+1]===id) bonusOutScore+=20; // exact position
         else bonusOutScore+=10; // right person, wrong position
       }
     });
@@ -1534,11 +1539,11 @@ function calcScore(data) {
   // Bonus merge: contestants eliminated before merge
   let bonusMergeScore=0;
   if(gameState.mergeHappened) {
-    // mergeHappened is set by admin when merge occurs
-    // All contestants eliminated before merge are "correct" picks
+    // preMergeElimIds is saved by admin at the moment of marking merge — only those count
+    const preMerge = gameState.preMergeElimIds || elimOrder; // fallback: all current elims (backwards-compat)
     (data.bonusMerge||[]).forEach(id=>{
       if(!id) return;
-      if(elimOrder.includes(id)) bonusMergeScore+=10;
+      if(preMerge.includes(id)) bonusMergeScore+=10;
     });
   }
   breakdown.bonusMergeScore=bonusMergeScore;
@@ -1699,7 +1704,9 @@ function renderLeaderboard() {
     // Elimination order (DQ excluded) for hit/miss coloring
     const elimOrderLb = [...(gameState.eliminated||[])]
       .filter(e => !findById(e.id)?.disqualified).sort((a,b)=>a.order-b.order).map(e=>e.id);
-    const knownOutLb = elimOrderLb.slice(1, Math.min(6, elimOrderLb.length));
+    // For bonusOut coloring: exclude late-entry contestants so original positions align
+    const elimOrderLbForOut = elimOrderLb.filter(id => !findById(id)?.lateEntry);
+    const knownOutLb = elimOrderLbForOut.slice(1, Math.min(6, elimOrderLbForOut.length));
 
     const bonusRows = bonusEntries.map((e,i)=>{
       const isMe = e.nick===myNick;
@@ -1710,8 +1717,8 @@ function renderLeaderboard() {
       const outCells = (e.data.bonusOut||Array(5).fill(null)).map((id,j)=>{
         const c = id?findById(id):null;
         if(!c) return `<span style="display:block;font-size:.78rem;color:var(--muted)">${outLabels[j]} —</span>`;
-        const posKnown = elimOrderLb.length > j+1;
-        const isExact = posKnown && elimOrderLb[j+1] === id;
+        const posKnown = elimOrderLbForOut.length > j+1;
+        const isExact = posKnown && elimOrderLbForOut[j+1] === id;
         const isPartial = posKnown && !isExact && knownOutLb.includes(id);
         const color = isExact ? 'var(--green)' : isPartial ? 'var(--gold)' : posKnown ? '#e07070' : 'var(--cream)';
         const suffix = isExact ? ' ✓' : isPartial ? ' ~' : posKnown ? ' ✗' : '';
@@ -2007,9 +2014,18 @@ function renderAdmin() {
   $('btn-toggle-bonus').onclick = async () => {
     await setDoc(doc(db,'game','state'),{...gameState,bonusOpen:!gameState.bonusOpen});
   };
-  // Toggle merge
+  // Toggle merge — when marking merge, snapshot current pre-merge eliminations
   $('btn-toggle-merge').onclick = async () => {
-    await setDoc(doc(db,'game','state'),{...gameState,mergeHappened:!gameState.mergeHappened});
+    if(!gameState.mergeHappened) {
+      // Capture the non-DQ elimination order at the moment merge is marked
+      const preMergeElimIds = [...(gameState.eliminated||[])]
+        .filter(e => !findById(e.id)?.disqualified)
+        .sort((a,b) => a.order - b.order)
+        .map(e => e.id);
+      await setDoc(doc(db,'game','state'),{...gameState, mergeHappened:true, preMergeElimIds});
+    } else {
+      await setDoc(doc(db,'game','state'),{...gameState, mergeHappened:false, preMergeElimIds:[]});
+    }
   };
   // Bonus question 2 answer
   const btnBq2Vrati = $('btn-bq2-vrati');
