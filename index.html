@@ -1537,15 +1537,17 @@ function calcScore(data) {
   score+=bonusQ2Score;
 
   // Bonus merge: contestants eliminated before merge
+  // Progressive: anyone already eliminated provably didn't make the merge → score immediately.
+  // After merge is marked, preMergeElimIds locks in exactly which eliminations were pre-merge
+  // (prevents post-merge eliminations from scoring).
   let bonusMergeScore=0;
-  if(gameState.mergeHappened) {
-    // preMergeElimIds is saved by admin at the moment of marking merge — only those count
-    const preMerge = gameState.preMergeElimIds || elimOrder; // fallback: all current elims (backwards-compat)
-    (data.bonusMerge||[]).forEach(id=>{
-      if(!id) return;
-      if(preMerge.includes(id)) bonusMergeScore+=10;
-    });
-  }
+  const preMerge = gameState.mergeHappened
+    ? (gameState.preMergeElimIds || elimOrder) // merge happened: use snapshot (or fallback)
+    : elimOrder;                                // merge not yet: every elimination so far is pre-merge
+  (data.bonusMerge||[]).forEach(id=>{
+    if(!id) return;
+    if(preMerge.includes(id)) bonusMergeScore+=10;
+  });
   breakdown.bonusMergeScore=bonusMergeScore;
   score+=bonusMergeScore;
 
