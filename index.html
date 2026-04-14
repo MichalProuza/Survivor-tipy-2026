@@ -436,33 +436,33 @@ const db   = getFirestore(app);
 ═══════════════════════════════════════════════ */
 const CONTESTANTS = {
   celebs: [
-    {id:'trabo',   name:'Trabo',   desc:'Michal Trabalík, 31 — reality star',    emoji:'⭐', tribe:'hrdinove'},
+    {id:'trabo',   name:'Trabo',   desc:'Michal Trabalík, 31 — reality star',    emoji:'⭐', tribe:'padousi'},
     {id:'adam',    name:'Adam',    desc:'Adam Chlpík, 39 — rapper',              emoji:'🎤', tribe:'padousi'},
     {id:'vendy',   name:'Vendy',   desc:'Vendula Wronka Fialová, 38 — herečka',  emoji:'🎭', tribe:'hrdinove'},
     {id:'doki',    name:'Doki',    desc:'Jan Dokládal, 26 — moderátor',          emoji:'📻', tribe:'hrdinove'},
     {id:'ondrej',  name:'Ondřej',  desc:'Ondřej Kubina, 28 — herec',             emoji:'🎬', tribe:'hrdinove'},
-    {id:'zofie',   name:'Žofie',   desc:'Žofie Dařbujánová, 31 — zpěvačka',     emoji:'🎶', tribe:'padousi'},
+    {id:'zofie',   name:'Žofie',   desc:'Žofie Dařbujánová, 31 — zpěvačka',     emoji:'🎶', tribe:'hrdinove'},
     {id:'johana',  name:'Johana',  desc:'Johana Nováčková, 28 — herečka',        emoji:'🌟', tribe:'padousi'},
   ],
   civilian: [
     {id:'tereza',   name:'Tereza',   desc:'Tereza Svobodová, 29 — porodní asistentka', emoji:'👶', tribe:'hrdinove'},
     {id:'nela',     name:'Nela',     desc:'Nela Slivková, 30 — novinářka',              emoji:'📰', tribe:'padousi'},
-    {id:'matej',    name:'Matěj',    desc:'Matěj Libecajt, 37 — key account manažer',  emoji:'💼', tribe:'hrdinove'},
+    {id:'matej',    name:'Matěj',    desc:'Matěj Libecajt, 37 — key account manažer',  emoji:'💼', tribe:'padousi'},
     {id:'bara',     name:'Bára',     desc:'Bára Hošková, 26 — módní návrhářka',        emoji:'👗', tribe:'hrdinove'},
-    {id:'jura',     name:'Jura',     desc:'Jiří Drtil, 30 — stavební inženýr',         emoji:'🏗️', tribe:'hrdinove'},
-    {id:'jan',      name:'Ján',      desc:'Ján Palko, 35 — sous-chef',                 emoji:'👨‍🍳', tribe:'padousi'},
+    {id:'jura',     name:'Jura',     desc:'Jiří Drtil, 30 — stavební inženýr',         emoji:'🏗️', tribe:'padousi'},
+    {id:'jan',      name:'Ján',      desc:'Ján Palko, 35 — sous-chef',                 emoji:'👨‍🍳', tribe:'hrdinove'},
     {id:'simona',   name:'Simona',   desc:'Simona Kirchnerová, 28 — modelka',          emoji:'💎', tribe:'padousi'},
     {id:'eva',      name:'Eva',      desc:'Eva Tesařová, 20 — studentka',              emoji:'📚', tribe:'padousi'},
-    {id:'sara',     name:'Sára',     desc:'Sára Trnková, 24 — IT konzultantka',        emoji:'💻', tribe:'hrdinove'},
+    {id:'sara',     name:'Sára',     desc:'Sára Trnková, 24 — IT konzultantka',        emoji:'💻', tribe:'padousi'},
     {id:'lukas',    name:'Lukáš',    desc:'Lukáš Švec, 28 — policista',               emoji:'👮', tribe:'hrdinove'},
     {id:'bety',     name:'Bety',     desc:'Alžběta Levínská, 25 — basketbalistka',    emoji:'🏀', tribe:'hrdinove'},
-    {id:'iki',      name:'Iki',      desc:'Iki Ngatse, 25 — podcaster',               emoji:'🎙️', tribe:'padousi'},
+    {id:'iki',      name:'Iki',      desc:'Iki Ngatse, 25 — podcaster',               emoji:'🎙️', tribe:'hrdinove'},
     {id:'viviane',  name:'Viviane',  desc:'Viviane Kerstin, 25 — pilates instruktorka',emoji:'🧘', tribe:'hrdinove'},
     {id:'leos',     name:'Leoš',     desc:'Leoš Svoboda, 23 — stážista v jaderné el.',emoji:'⚛️', tribe:'hrdinove', disqualified:true},
     {id:'otakar',   name:'Otakar',   desc:'Otakar Šenkýř, 32 — designer',             emoji:'🎨', tribe:'padousi'},
     {id:'stanislav',name:'Stanislav',desc:'Stanislav Štěpánek, 28 — AI architekt',    emoji:'🤖', tribe:'hrdinove'},
     {id:'denisa',   name:'Denisa',   desc:'Denisa Ryndová, 25 — parkurová jezdkyně',  emoji:'🐎', tribe:'padousi'},
-    {id:'johana2',  name:'Johana II.', desc:'Johana (II. série) — kandidátka',           emoji:'🌟', tribe:'padousi', lateEntry:true},
+    {id:'johana2',  name:'Johana II.', desc:'Johana (II. série) — kandidátka',           emoji:'🌟', tribe:'hrdinove', lateEntry:true},
     {id:'kristyna3',name:'Kristýna III.',desc:'Kristýna (III. série) — kandidátka',      emoji:'✨', tribe:'padousi', lateEntry:true},
   ]
 };
@@ -1856,7 +1856,7 @@ function renderAdmin() {
       <div class="admin-row">
         <div>
           <label style="display:block;margin-bottom:4px">Nový deadline:</label>
-          <input type="datetime-local" id="admin-reset-week-deadline" value="2026-03-24T20:00">
+          <input type="datetime-local" id="admin-reset-week-deadline" value="2026-04-14T20:00">
         </div>
         <button class="btn-admin danger" id="btn-reset-last-week">🔄 Resetovat poslední kolo</button>
       </div>
