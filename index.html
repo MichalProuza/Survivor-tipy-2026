@@ -1709,6 +1709,11 @@ function renderLeaderboard() {
     // For bonusOut coloring: exclude late-entry contestants so original positions align
     const elimOrderLbForOut = elimOrderLb.filter(id => !findById(id)?.lateEntry);
     const knownOutLb = elimOrderLbForOut.slice(1, Math.min(6, elimOrderLbForOut.length));
+    // For bonusMerge coloring: pre-merge eliminations (mirror of calcScore logic)
+    const preMergeLb = gameState.mergeHappened
+      ? (gameState.preMergeElimIds || elimOrderLb)
+      : elimOrderLb;
+    const mergeHappenedLb = !!gameState.mergeHappened;
 
     const bonusRows = bonusEntries.map((e,i)=>{
       const isMe = e.nick===myNick;
@@ -1728,7 +1733,12 @@ function renderLeaderboard() {
       }).join('');
       const mergeCells = (e.data.bonusMerge||Array(5).fill(null)).map((id,j)=>{
         const c = id?findById(id):null;
-        return c ? `<span style="display:block;font-size:.78rem;white-space:nowrap">${j+1}. ${c.emoji} ${c.name}</span>` : `<span style="display:block;font-size:.78rem;color:var(--muted)">${j+1}. —</span>`;
+        if(!c) return `<span style="display:block;font-size:.78rem;color:var(--muted)">${j+1}. —</span>`;
+        const isHit = preMergeLb.includes(id);
+        const isMiss = mergeHappenedLb && !isHit;
+        const color = isHit ? 'var(--green)' : isMiss ? '#e07070' : 'var(--cream)';
+        const suffix = isHit ? ' ✓' : isMiss ? ' ✗' : '';
+        return `<span style="display:block;font-size:.78rem;white-space:nowrap;color:${color}">${j+1}. ${c.emoji} ${c.name}${suffix}</span>`;
       }).join('');
       const bqPick = e.data.bonusQuestion ? findById(e.data.bonusQuestion) : null;
       const bq2Pick = e.data.bonusQuestion2;
