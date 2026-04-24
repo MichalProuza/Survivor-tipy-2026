@@ -1723,7 +1723,11 @@ function renderLeaderboard() {
       const isMe = e.nick===myNick;
       const farCells = (e.data.bonusFar||Array(5).fill(null)).map((id,j)=>{
         const c = id?findById(id):null;
-        return c ? `<span style="display:block;font-size:.78rem;white-space:nowrap">${farLabels[j]} ${c.emoji} ${c.name}</span>` : `<span style="display:block;font-size:.78rem;color:var(--muted)">${farLabels[j]} —</span>`;
+        if(!c) return `<span style="display:block;font-size:.78rem;color:var(--muted)">${farLabels[j]} —</span>`;
+        const isElim = elimOrderLb.includes(id);
+        const color = isElim ? '#e07070' : 'var(--cream)';
+        const suffix = isElim ? ' ✗' : '';
+        return `<span style="display:block;font-size:.78rem;white-space:nowrap;color:${color}">${farLabels[j]} ${c.emoji} ${c.name}${suffix}</span>`;
       }).join('');
       const outCells = (e.data.bonusOut||Array(5).fill(null)).map((id,j)=>{
         const c = id?findById(id):null;
