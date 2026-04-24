@@ -1146,6 +1146,7 @@ function renderBonus() {
     const slots = arr.map((id,i) => {
       const c = id?findById(id):null;
       const isDQ = c?.disqualified;
+      const isEliminated = !!(c && !isDQ && elimOrderBonus.includes(id));
       let scoreHint = '';
       if(locked && c && !isDQ && prefix === 'out') {
         const posKnown = elimOrderBonusForOut.length > i+1;
@@ -1157,11 +1158,14 @@ function renderBonus() {
           else scoreHint = '<span style="font-size:.7rem;color:var(--red);margin-left:auto">✗ 0b</span>';
         }
       }
+      const elimBadge = (isEliminated && prefix === 'far')
+        ? '<span style="font-size:.65rem;color:var(--red);white-space:nowrap">✗ vypadl/a</span>'
+        : '';
       return `<div class="bonus-slot${c&&!isDQ?' filled':''}" data-prefix="${prefix}" data-slot="${i}">
         <div class="slot-num ${classes[i]}">${labels[i]}</div>
         ${c && !isDQ ? `<div class="slot-filled-inner">
-            <span class="slot-emoji">${c.emoji}</span>
-            <div><div class="slot-name">${c.name}</div><div class="slot-desc">${c.desc}</div></div>
+            <span class="slot-emoji"${isEliminated && prefix==='far' ? ' style="opacity:.5"' : ''}>${c.emoji}</span>
+            <div><div class="slot-name"${isEliminated && prefix==='far' ? ' style="color:var(--red)"' : ''}>${c.name}</div><div class="slot-desc">${c.desc}</div>${elimBadge}</div>
             ${scoreHint}
             ${!locked?`<button class="slot-remove" data-prefix="${prefix}" data-slot="${i}">✕</button>`:''}
           </div>`
